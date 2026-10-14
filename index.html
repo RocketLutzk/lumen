@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lumen Vault Casino</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky top bar over a two-mode app. Player floor = game stage + live-bets rail; Operator back office = side nav + panels.
+   Night-arcade navy base; each game owns a two-stop gradient (--g1/--g2) that colors its buttons, canvas and tabs. Committed dark. */
+:root{
+  --bg:#0a0c1a; --panel:#12162d; --panel-2:#191e3c; --panel-3:#22284f;
+  --line:#242a52; --line-2:#333a6b;
+  --fg:#f3f4ff; --muted:#9ca2d0; --dim:#676d9c; --ink:#130b1f;
+  --c-crash:#ff6a3d; --c-crash2:#ffc23d; --c-dice:#22d3ee; --c-dice2:#5b8cff;
+  --c-mines:#2ee59d; --c-mines2:#c7f43a; --c-plinko:#ff4fa8; --c-plinko2:#a35bff;
+  --c-wheel:#b18cff; --c-wheel2:#4fe3c1; --c-slots:#ff3b5c; --c-slots2:#ffcc33;
+  --win:#2ee59d; --loss:#ff5470; --warn:#ffb020; --info:#6f9bff;
+  --g1:#ff4fa8; --g2:#ff6a3d;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px;
+  color-scheme:dark;
+}
+.t-crash{--g1:var(--c-crash2);--g2:var(--c-crash)}
+.t-dice{--g1:var(--c-dice);--g2:var(--c-dice2)}
+.t-mines{--g1:var(--c-mines2);--g2:var(--c-mines)}
+.t-plinko{--g1:var(--c-plinko);--g2:var(--c-plinko2)}
+.t-wheel{--g1:var(--c-wheel2);--g2:var(--c-wheel)}
+.t-slots{--g1:var(--c-slots2);--g2:var(--c-slots)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--f-body);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(900px 500px at 8% -10%,#ff4fa81f,transparent 60%),radial-gradient(800px 500px at 100% 0%,#22d3ee17,transparent 60%);background-repeat:no-repeat}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--g1);outline-offset:2px}
+.wrap{max-width:1340px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .win{color:var(--win)} .loss{color:var(--loss)} .acc{color:var(--g1)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.02em}
+h2{font-size:19px;font-weight:700} h3{font-size:14px;font-weight:700}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.grad-text{background:linear-gradient(90deg,var(--g1),var(--g2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* demo strip + top bar */
+.demo-strip{background:linear-gradient(90deg,var(--c-plinko),var(--c-crash),var(--c-crash2),var(--c-mines),var(--c-dice));color:var(--ink);font-size:12px;font-weight:700}
+.demo-strip .wrap{padding-block:5px;display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:#0a0c1ae0;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:-.02em}
+.brand-mark{width:32px;height:32px;border-radius:10px;background:conic-gradient(from 0deg,var(--c-plinko),var(--c-crash),var(--c-crash2),var(--c-mines),var(--c-dice),var(--c-plinko2),var(--c-plinko));display:grid;place-items:center}
+.brand-mark i{width:12px;height:12px;border-radius:3px;background:var(--bg);transform:rotate(45deg)}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:700;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--panel-3);color:var(--fg)}
+.spacer{flex:1}
+.wallet{display:flex;align-items:center;gap:8px}
+.bal{display:flex;align-items:baseline;gap:6px;border-radius:999px;padding:7px 15px;background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(90deg,var(--c-plinko),var(--c-crash2),var(--c-dice)) border-box;border:1.5px solid transparent}
+.bal b{font-family:var(--f-mono);font-size:15px}
+.bal span{font-size:11px;color:var(--muted);font-weight:700}
+.bal.bump b{animation:bump .5s}
+@keyframes bump{30%{color:var(--win);transform:scale(1.08)}}
+
+/* buttons, inputs */
+.btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;transition:background .15s,transform .08s,box-shadow .2s,filter .15s}
+.btn:hover{background:var(--panel-3)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-go{background:linear-gradient(135deg,var(--g1),var(--g2));border:0;color:var(--ink);box-shadow:0 10px 26px -12px var(--g2)}
+.btn-go:hover:not(:disabled){background:linear-gradient(135deg,var(--g1),var(--g2));filter:brightness(1.1);box-shadow:0 12px 30px -10px var(--g2)}
+.btn-cash{background:linear-gradient(135deg,var(--c-mines2),var(--c-mines));border:0;color:var(--ink);box-shadow:0 10px 26px -10px var(--c-mines);animation:glow 1.1s ease-in-out infinite alternate}
+.btn-cash:hover:not(:disabled){background:linear-gradient(135deg,var(--c-mines2),var(--c-mines));filter:brightness(1.08)}
+@keyframes glow{to{box-shadow:0 10px 34px -6px var(--c-mines)}}
+.btn-danger{color:var(--loss);border-color:#ff547055}
+.btn-ok{color:var(--win);border-color:#2ee59d55}
+.btn-big{width:100%;padding:15px;font-size:15px;border-radius:12px;font-family:var(--f-display);font-weight:700;letter-spacing:-.01em}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-weight:700}
+.input,select.input{width:100%;background:var(--bg);border:1px solid var(--line-2);border-radius:10px;padding:9px 11px;min-width:0}
+.input:focus{border-color:var(--g1);outline:none}
+.amt{display:flex;align-items:stretch;background:var(--bg);border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+.amt:focus-within{border-color:var(--g1)}
+.amt input{flex:1;min-width:0;border:0;background:none;padding:10px 11px;font-family:var(--f-mono);outline:none}
+.amt .cur{align-self:center;padding-left:11px;font-size:11px;color:var(--muted);font-weight:700}
+.amt .mini{border:0;border-left:1px solid var(--line-2);background:var(--panel-2);padding:0 12px;cursor:pointer;font-weight:700;color:var(--muted)}
+.amt .mini:hover{color:var(--fg)}
+.hint{font-size:12px;color:var(--dim)}
+.opts{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bg);border:1px solid var(--line-2);border-radius:10px;padding:3px;gap:2px}
+.opts button{border:0;background:none;padding:7px 4px;border-radius:7px;cursor:pointer;font-weight:700;color:var(--muted);font-size:13px}
+.opts button[aria-pressed="true"]{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--ink)}
+.opts button:disabled{cursor:not-allowed;opacity:.5}
+
+/* player */
+.ptabs{display:flex;gap:6px;overflow-x:auto;padding-block:14px 4px;scrollbar-width:none}
+.ptabs button{position:relative;border:1px solid transparent;background:none;color:var(--muted);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.ptabs button .dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.ptabs button[aria-selected="true"]{background:var(--panel-2);border-color:var(--line-2);color:var(--fg)}
+.floor{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;padding-block:12px}
+@media (max-width:1100px){.floor{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.pad{padding:18px}
+.banner{border-radius:var(--r);padding:12px 16px;font-weight:700;background:#ff54701f;border:1px solid #ff547066;margin-bottom:12px}
+
+.lobby-hero{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;padding:28px;border:1px solid var(--line);border-radius:var(--r);
+  background:radial-gradient(420px 260px at 92% 10%,#ff4fa855,transparent 70%),radial-gradient(380px 260px at 70% 110%,#22d3ee44,transparent 70%),radial-gradient(300px 200px at 40% -20%,#ffc23d33,transparent 70%),var(--panel)}
+.lobby-hero h1{font-size:clamp(26px,3.6vw,42px);font-weight:800;line-height:1.05;max-width:17ch}
+.lobby-hero p{color:var(--muted);max-width:52ch;margin:12px 0 0}
+.hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.hero-stats div{display:flex;flex-direction:column}
+.hero-stats b{font-family:var(--f-mono);font-size:19px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:12px;cursor:pointer;text-align:left;transition:transform .18s,box-shadow .2s,border-color .2s}
+.gcard:hover{transform:translateY(-4px);border-color:var(--g2);box-shadow:0 18px 40px -20px var(--g2)}
+.gcard .art{height:120px;border-radius:10px;background:radial-gradient(circle at 30% 20%,#ffffff40,transparent 55%),linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;color:var(--ink);overflow:hidden}
+.gcard .art svg{height:78px;width:auto;transition:transform .3s}
+.gcard:hover .art svg{transform:scale(1.08) rotate(-3deg)}
+.gcard .body{padding:0 4px 4px;display:flex;flex-direction:column;gap:8px}
+.gcard .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.gcard.off{opacity:.5}
+.gcard h3{font-size:17px}
+
+.game{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px}
+@media (max-width:820px){.game{grid-template-columns:minmax(0,1fr)} .game .stagebox{order:-1}}
+.controls{display:flex;flex-direction:column;gap:14px;padding:18px}
+.stagebox{position:relative;min-height:400px;overflow:hidden;min-width:0;background:radial-gradient(600px 300px at 50% 0%,color-mix(in srgb,var(--g2) 14%,transparent),transparent 70%),var(--panel)}
+.paused{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:#0a0c1ad9;font-weight:700;font-family:var(--f-display);font-size:17px;text-align:center;padding:16px}
+.kv{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.kv span:first-child{color:var(--muted)}
+.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat-strip div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat-strip span{font-size:11px;color:var(--muted);font-weight:700}
+.stat-strip b{font-family:var(--f-mono);font-size:14px;overflow:hidden;text-overflow:ellipsis}
+
+/* crash */
+#crashCanvas,#plinkoCanvas{display:block;width:100%;height:400px}
+.crash-over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:6px}
+.crash-mult{font-family:var(--f-display);font-weight:800;font-size:clamp(46px,8vw,80px);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 6px 30px #00000080}
+.crash-mult.flying{background:linear-gradient(180deg,#fff,var(--g1));-webkit-background-clip:text;background-clip:text;color:transparent}
+.crash-mult.bust{color:var(--loss);animation:shake .4s}
+.crash-mult.cashed{color:var(--win)}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.crash-sub{font-size:13px;color:var(--muted);font-weight:700;min-height:20px;text-align:center}
+.hist{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:6px;overflow:hidden;z-index:2}
+.pill{font-family:var(--f-mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--panel-3);color:var(--muted);flex:none}
+.pill.hi{color:var(--ink);background:linear-gradient(135deg,var(--c-mines2),var(--c-mines))}
+.pill.top{color:var(--ink);background:linear-gradient(135deg,var(--c-crash2),var(--c-plinko))}
+.pill.lo{color:var(--loss)}
+.bots{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.bots div{display:flex;justify-content:space-between;gap:8px;padding:5px 9px;border-radius:8px;background:var(--bg)}
+.bots .cashed{color:var(--win)} .bots .bust{color:var(--dim);text-decoration:line-through}
+
+/* dice */
+.dice-stage{display:flex;flex-direction:column;justify-content:center;gap:40px;padding:30px 28px;min-height:400px}
+.dice-result{font-family:var(--f-display);font-weight:800;font-size:clamp(56px,9vw,92px);line-height:1;text-align:center;font-variant-numeric:tabular-nums}
+.dice-result.w{color:var(--win);text-shadow:0 0 40px #2ee59d66}
+.dice-result.l{color:var(--loss)}
+.track{position:relative;height:18px;border-radius:999px;background:#ff547055;box-shadow:inset 0 0 0 1px #ff547088}
+.track .zone{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--g1),var(--g2));border-radius:inherit;transition:left .2s,width .2s}
+.track .marker{position:absolute;top:-40px;transform:translateX(-50%);transition:left .55s cubic-bezier(.2,.9,.25,1.15);font-family:var(--f-mono);font-size:13px;font-weight:600;background:var(--fg);color:var(--bg);padding:4px 9px;border-radius:8px;white-space:nowrap}
+.track .marker::after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-bottom:0;border-top-color:var(--fg)}
+.track .marker.w{background:var(--win)} .track .marker.w::after{border-top-color:var(--win)}
+.track .marker.l{background:var(--loss);color:var(--fg)} .track .marker.l::after{border-top-color:var(--loss)}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--dim);margin-top:10px}
+input[type=range]{width:100%;accent-color:var(--g2)}
+
+/* mines */
+.mines-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;min-height:400px}
+.ladder{display:flex;gap:6px;overflow:hidden;width:min(100%,440px)}
+.ladder span{flex:1;min-width:0;text-align:center;font-family:var(--f-mono);font-size:11px;font-weight:600;padding:5px 2px;border-radius:8px;background:var(--panel-3);color:var(--muted)}
+.ladder span.now{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--ink)}
+.ladder span.done{color:var(--win);background:#2ee59d1a}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:min(100%,440px)}
+.tile{aspect-ratio:1;border-radius:12px;border:0;background:linear-gradient(160deg,var(--panel-3),var(--panel-2));box-shadow:inset 0 -4px 0 #0000004d,inset 0 1px 0 #ffffff14;cursor:pointer;display:grid;place-items:center;padding:20%;transition:transform .15s,filter .15s;max-width:100%}
+.tile:hover:not(:disabled){transform:translateY(-3px);filter:brightness(1.25)}
+.tile:disabled{cursor:default}
+.tile svg{width:100%;height:100%}
+.tile.gem{background:radial-gradient(circle at 50% 40%,#2ee59d55,transparent 70%),var(--panel-2);box-shadow:inset 0 0 0 2px var(--c-mines);color:var(--c-mines2)}
+.tile.mine{background:radial-gradient(circle at 50% 45%,#ff547077,transparent 70%),var(--panel-2);box-shadow:inset 0 0 0 2px var(--loss);color:var(--loss)}
+.tile.pop{animation:flip .42s cubic-bezier(.3,1.4,.5,1)}
+.tile.ghost{opacity:.35;box-shadow:none}
+@keyframes flip{0%{transform:rotateY(90deg) scale(.8)}100%{transform:none}}
+
+/* plinko */
+.plk-over{position:absolute;left:0;right:0;top:12px;text-align:center;pointer-events:none;font-family:var(--f-display);font-weight:700;font-size:15px;min-height:22px}
+
+/* wheel */
+#wheelCanvas{display:block;width:100%;height:400px}
+.wheel-legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 16px 18px}
+.wl{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;color:var(--ink);display:inline-flex;gap:6px;align-items:baseline}
+.wl small{font-size:10px;opacity:.75}
+.wl.zero{color:var(--muted);background:var(--panel-3)}
+
+/* slots */
+.slots-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:26px 16px;min-height:400px}
+.machine{--cell:clamp(66px,12vw,104px);position:relative;display:grid;grid-template-columns:repeat(3,var(--cell));gap:10px;padding:14px;border-radius:24px;background:linear-gradient(160deg,var(--c-slots2),var(--c-slots));box-shadow:0 24px 60px -24px var(--c-slots),inset 0 2px 0 #ffffff66}
+.machine::before{content:"";position:absolute;inset:6px;border-radius:19px;border:2px dashed #13091f40;pointer-events:none}
+.reel{position:relative;height:calc(var(--cell) * 3);overflow:hidden;border-radius:14px;background:linear-gradient(#0c0f22,#1e2350 50%,#0c0f22)}
+.reel::after{content:"";position:absolute;inset:0;background:linear-gradient(#0a0c1ae6,transparent 30%,transparent 70%,#0a0c1ae6);pointer-events:none}
+.strip{will-change:transform}
+.cell{height:var(--cell);display:grid;place-items:center;padding:13%}
+.cell svg{width:100%;height:100%;filter:drop-shadow(0 3px 0 #00000059)}
+.payline{position:absolute;left:8px;right:8px;top:50%;height:calc(var(--cell) + 4px);transform:translateY(-50%);border:2px solid #ffffff59;border-radius:14px;pointer-events:none;z-index:2}
+.payline.hit{border-color:#fff;box-shadow:0 0 28px #ffffffb3,inset 0 0 22px #ffffff59;animation:blink .45s 4}
+@keyframes blink{50%{border-color:transparent;box-shadow:none}}
+.slot-msg{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,3.4vw,30px);min-height:38px;text-align:center}
+.slot-msg.jack{background:linear-gradient(90deg,var(--c-slots2),var(--c-plinko),var(--c-dice),var(--c-mines2));-webkit-background-clip:text;background-clip:text;color:transparent;animation:shake .5s 2}
+.paytable{display:flex;flex-direction:column;gap:3px}
+.paytable div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 8px;background:var(--bg);border-radius:8px;font-size:12px;transition:background .2s}
+.paytable .ic{display:flex;gap:2px;align-items:center;color:var(--muted)}
+.paytable svg{width:20px;height:20px}
+.paytable div.on{background:linear-gradient(90deg,#ff3b5c40,#ffcc3340);outline:1px solid var(--c-slots2)}
+
+/* feed */
+.feed h3{display:flex;align-items:center;gap:8px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--win);animation:pulse 1.8s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #2ee59d99}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.feed ul{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.feed li{display:grid;grid-template-columns:4px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 8px 7px 0;border-radius:8px;font-size:12px;background:var(--panel-2);animation:slide .3s ease-out}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}}
+.feed li i{align-self:stretch;border-radius:0 4px 4px 0;background:linear-gradient(var(--g1),var(--g2))}
+.feed .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed .who small{display:block;color:var(--dim);font-size:11px}
+
+/* tables, chips */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.gtag{display:inline-flex;align-items:center;gap:6px}
+.gtag::before{content:"";width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel-3);color:var(--muted)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.ok{color:var(--win);background:#2ee59d1f} .chip.warn{color:var(--warn);background:#ffb0201f}
+.chip.bad{color:var(--loss);background:#ff54701f} .chip.info{color:var(--info);background:#6f9bff1f}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.linkbtn{border:0;background:none;color:var(--c-dice);cursor:pointer;padding:0;font-weight:700;font-size:12px}
+
+/* fairness */
+.fair-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.hash{font-family:var(--f-mono);font-size:12px;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--c-dice)}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.row>.field{flex:1;min-width:120px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.mini-grid{display:grid;grid-template-columns:repeat(5,22px);gap:4px}
+.mini-grid i{width:22px;height:22px;border-radius:5px;background:var(--panel-3)}
+.mini-grid i.m{background:var(--loss)}
+
+/* admin */
+.admin{display:grid;grid-template-columns:210px minmax(0,1fr);gap:20px;padding-block:18px 40px}
+.anav{display:flex;flex-direction:column;gap:2px;position:sticky;top:84px;align-self:start}
+.anav button{display:flex;justify-content:space-between;align-items:center;border:0;background:none;text-align:left;padding:9px 12px;border-radius:10px;color:var(--muted);font-weight:700;cursor:pointer}
+.anav button[aria-selected="true"]{background:var(--panel-2);color:var(--fg)}
+.badge{background:var(--warn);color:#241500;font-size:11px;border-radius:999px;padding:0 7px;font-family:var(--f-mono)}
+@media (max-width:820px){.admin{grid-template-columns:minmax(0,1fr)} .anav{position:static;flex-direction:row;overflow-x:auto}.anav button{white-space:nowrap;gap:8px}}
+.ahead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.ahead p{margin:4px 0 0;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:14px}
+.kpi{padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;gap:4px}
+.kpi b{font-family:var(--f-mono);font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi small{font-size:12px;color:var(--dim)}
+.two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:1000px){.two{grid-template-columns:minmax(0,1fr)}}
+.chart-wrap{overflow-x:auto}
+.chart-wrap svg{display:block;min-width:560px;width:100%;height:auto}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.toolbar .input{max-width:260px}
+.gset{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.gset .panel{display:flex;flex-direction:column;gap:12px;border-top:3px solid var(--g2)}
+.switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700}
+.switch input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line-2);position:relative;cursor:pointer;transition:background .15s;margin:0}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--fg);transition:left .15s}
+.switch input:checked{background:var(--win)}
+.switch input:checked::after{left:19px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+
+/* modal, toast, fx */
+.modal-bg{position:fixed;inset:0;z-index:50;background:#05060ec0;display:grid;place-items:center;padding:16px}
+.modal{width:min(100%,440px);background:var(--panel);border:1px solid var(--line-2);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow:auto}
+.modal header{display:flex;justify-content:space-between;align-items:center}
+.x{border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1}
+.nets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.nets button{border:1px solid var(--line-2);background:var(--bg);border-radius:10px;padding:10px;cursor:pointer;text-align:left;font-weight:700}
+.nets button small{display:block;color:var(--dim);font-weight:500;font-size:11px}
+.nets button[aria-pressed="true"]{border-color:var(--g1);background:#ff4fa814}
+.toasts{position:fixed;z-index:60;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;max-width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--panel-3);border:1px solid var(--line-2);border-left:4px solid var(--c-dice);border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 10px 28px #0008;animation:tin .2s ease-out}
+.toast.ok{border-left-color:var(--win)} .toast.bad{border-left-color:var(--loss)}
+@keyframes tin{from{transform:translateY(8px);opacity:0}}
+#fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:70}
+footer{border-top:1px solid var(--line);margin-top:20px;color:var(--dim);font-size:12px}
+footer .wrap{padding-block:16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+section+section{margin-top:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<style>[hidden]{display:none!important} img{max-width:100%} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<div class="demo-strip"><div class="wrap"><span>DEMO BUILD · virtual balance only, no real-money play</span><span>18+ · Play responsibly</span></div></div>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><div class="brand-mark"><i></i></div>Lumen Vault</div>
+    <div class="seg" role="group" aria-label="View">
+      <button id="vPlayer" aria-pressed="true">Player</button>
+      <button id="vAdmin" aria-pressed="false">Operator back office</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="wallet" id="walletBox">
+      <div class="bal" id="balBox"><b id="bal">1,000.00</b><span>USDT</span></div>
+      <button class="btn btn-go" id="btnDeposit">Deposit</button>
+      <button class="btn" id="btnWithdraw">Withdraw</button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PLAYER ================= -->
+<div id="player">
+  <div class="wrap">
+    <nav class="ptabs" role="tablist" aria-label="Games">
+      <button role="tab" data-ptab="lobby" aria-selected="true">Lobby</button>
+      <button role="tab" data-ptab="crash" class="t-crash" aria-selected="false"><span class="dot"></span>Crash</button>
+      <button role="tab" data-ptab="plinko" class="t-plinko" aria-selected="false"><span class="dot"></span>Plinko</button>
+      <button role="tab" data-ptab="slots" class="t-slots" aria-selected="false"><span class="dot"></span>Lucky 777</button>
+      <button role="tab" data-ptab="wheel" class="t-wheel" aria-selected="false"><span class="dot"></span>Wheel</button>
+      <button role="tab" data-ptab="mines" class="t-mines" aria-selected="false"><span class="dot"></span>Mines</button>
+      <button role="tab" data-ptab="dice" class="t-dice" aria-selected="false"><span class="dot"></span>Dice</button>
+      <button role="tab" data-ptab="fair" aria-selected="false">Provably fair</button>
+    </nav>
+
+    <div class="floor">
+      <main style="min-width:0">
+        <div class="banner" id="blockedBanner" hidden>Your account is restricted by the operator. Betting is disabled.</div>
+
+        <!-- LOBBY -->
+        <section data-pane="lobby">
+          <div class="lobby-hero">
+            <div>
+              <div class="eyebrow">Crypto originals</div>
+              <h1>Six games. Every round verifiable.</h1>
+              <p>Each result comes from HMAC-SHA256 of a committed server seed, your client seed and a nonce. Check any bet yourself on the Provably fair tab.</p>
+            </div>
+            <div class="hero-stats">
+              <div><span class="eyebrow">Wagered today</span><b id="heroTurn">0</b></div>
+              <div><span class="eyebrow">Bets today</span><b id="heroBets">0</b></div>
+            </div>
+          </div>
+          <div class="cards" id="lobbyCards"></div>
+        </section>
+
+        <!-- CRASH -->
+        <section data-pane="crash" class="t-crash" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="crashBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="crashBet" type="number" min="0" step="0.1" value="10" inputmode="decimal"><button class="mini" data-adj="crashBet:0.5">½</button><button class="mini" data-adj="crashBet:2">2×</button></div>
+                <span class="hint" data-limits="crash"></span>
+              </div>
+              <div class="field"><label for="crashAuto">Auto cash-out at</label>
+                <div class="amt"><input id="crashAuto" type="number" min="1.01" step="0.01" value="2.00" inputmode="decimal"><span class="cur" style="padding-right:11px">×</span></div>
+                <span class="hint">Leave empty to cash out by hand.</span>
+              </div>
+              <button class="btn btn-go btn-big" id="crashBtn">Place bet</button>
+              <div class="kv"><span>Potential win</span><span class="num" id="crashPot">20.00</span></div>
+              <div>
+                <div class="eyebrow" style="margin-bottom:8px">This round</div>
+                <div class="bots" id="crashBots"><div><span class="muted">Waiting for bets…</span></div></div>
+              </div>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="crash" hidden>Crash is paused by the operator</div>
+              <canvas id="crashCanvas"></canvas>
+              <div class="hist" id="crashHist"></div>
+              <div class="crash-over"><div class="crash-mult" id="crashMult">1.00×</div><div class="crash-sub" id="crashSub">Place a bet to launch</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PLINKO -->
+        <section data-pane="plinko" class="t-plinko" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="plinkoBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="plinkoBet" type="number" min="0" step="0.1" value="5" inputmode="decimal"><button class="mini" data-adj="plinkoBet:0.5">½</button><button class="mini" data-adj="plinkoBet:2">2×</button></div>
+                <span class="hint" data-limits="plinko"></span>
+              </div>
+              <div class="field"><label>Risk</label>
+                <div class="opts" id="plRisk"><button data-risk="low" aria-pressed="false">Low</button><button data-risk="medium" aria-pressed="true">Medium</button><button data-risk="high" aria-pressed="false">High</button></div>
+              </div>
+              <div class="field"><label>Rows</label>
+                <div class="opts" id="plRows"><button data-rows="8" aria-pressed="false">8</button><button data-rows="12" aria-pressed="true">12</button><button data-rows="16" aria-pressed="false">16</button></div>
+              </div>
+              <button class="btn btn-go btn-big" id="plinkoBtn">Drop ball</button>
+              <div class="stat-strip"><div><span>Top prize</span><b id="plTop">—</b></div><div><span>In flight</span><b id="plFly">0</b></div><div><span>Last</span><b id="plLast">—</b></div></div>
+              <span class="hint">Tap Drop several times to send multiple balls.</span>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="plinko" hidden>Plinko is paused by the operator</div>
+              <canvas id="plinkoCanvas"></canvas>
+              <div class="plk-over" id="plOver"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLOTS -->
+        <section data-pane="slots" class="t-slots" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="slotsBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="slotsBet" type="number" min="0" step="0.1" value="2" inputmode="decimal"><button class="mini" data-adj="slotsBet:0.5">½</button><button class="mini" data-adj="slotsBet:2">2×</button></div>
+                <span class="hint" data-limits="slots"></span>
+              </div>
+              <button class="btn btn-go btn-big" id="slotsBtn">Spin</button>
+              <div>
+                <div class="eyebrow" style="margin-bottom:8px">Paytable · middle line</div>
+                <div class="paytable" id="payTable"></div>
+              </div>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="slots" hidden>Lucky 777 is paused by the operator</div>
+              <div class="slots-stage">
+                <div class="slot-msg" id="slotMsg"><span class="grad-text">Line up three 7s</span></div>
+                <div class="machine"><div class="reel"><div class="strip" id="reel0"></div></div><div class="reel"><div class="strip" id="reel1"></div></div><div class="reel"><div class="strip" id="reel2"></div></div><div class="payline" id="payline"></div></div>
+                <div class="crash-sub" id="slotSub">Space bar spins too</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WHEEL -->
+        <section data-pane="wheel" class="t-wheel" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="wheelBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="wheelBet" type="number" min="0" step="0.1" value="10" inputmode="decimal"><button class="mini" data-adj="wheelBet:0.5">½</button><button class="mini" data-adj="wheelBet:2">2×</button></div>
+                <span class="hint" data-limits="wheel"></span>
+              </div>
+              <div class="field"><label>Risk</label>
+                <div class="opts" id="whRisk"><button data-risk="low" aria-pressed="false">Low</button><button data-risk="medium" aria-pressed="true">Medium</button><button data-risk="high" aria-pressed="false">High</button></div>
+              </div>
+              <button class="btn btn-go btn-big" id="wheelBtn">Spin the wheel</button>
+              <div class="stat-strip"><div><span>Top prize</span><b id="whTop">—</b></div><div><span>Win chance</span><b id="whHit">—</b></div><div><span>Last</span><b id="whLast">—</b></div></div>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="wheel" hidden>Wheel is paused by the operator</div>
+              <canvas id="wheelCanvas"></canvas>
+              <div class="wheel-legend" id="whLegend"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MINES -->
+        <section data-pane="mines" class="t-mines" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="minesBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="minesBet" type="number" min="0" step="0.1" value="10" inputmode="decimal"><button class="mini" data-adj="minesBet:0.5">½</button><button class="mini" data-adj="minesBet:2">2×</button></div>
+                <span class="hint" data-limits="mines"></span>
+              </div>
+              <div class="field"><label for="minesCount">Mines</label>
+                <select class="input" id="minesCount"></select>
+              </div>
+              <button class="btn btn-go btn-big" id="minesBtn">Start game</button>
+              <div class="stat-strip"><div><span>Gems</span><b id="minesFound">0</b></div><div><span>Now</span><b id="minesCur">—</b></div><div><span>Next</span><b id="minesNext" class="acc">—</b></div></div>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="mines" hidden>Mines is paused by the operator</div>
+              <div class="mines-stage"><div class="ladder" id="minesLadder"></div><div class="grid5" id="minesGrid"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DICE -->
+        <section data-pane="dice" class="t-dice" hidden>
+          <div class="game">
+            <div class="panel controls">
+              <div class="field"><label for="diceBet">Bet amount</label>
+                <div class="amt"><span class="cur">USDT</span><input id="diceBet" type="number" min="0" step="0.1" value="10" inputmode="decimal"><button class="mini" data-adj="diceBet:0.5">½</button><button class="mini" data-adj="diceBet:2">2×</button></div>
+                <span class="hint" data-limits="dice"></span>
+              </div>
+              <div class="field"><label>Win when roll is</label>
+                <div class="opts"><button id="dUnder" aria-pressed="true">Under</button><button id="dOver" aria-pressed="false">Over</button></div>
+              </div>
+              <div class="field"><label for="diceTarget">Target <span class="num acc" id="diceTargetVal">50.00</span></label>
+                <input id="diceTarget" type="range" min="2" max="98" step="0.5" value="50">
+              </div>
+              <div class="stat-strip"><div><span>Chance</span><b id="diceChance">50%</b></div><div><span>Payout</span><b id="diceMult">1.98×</b></div><div><span>Profit</span><b id="diceProfit" class="win">9.80</b></div></div>
+              <button class="btn btn-go btn-big" id="diceBtn">Roll</button>
+            </div>
+            <div class="panel stagebox">
+              <div class="paused" data-paused="dice" hidden>Dice is paused by the operator</div>
+              <div class="dice-stage">
+                <div><div class="dice-result" id="diceResult">50.00</div><div class="crash-sub" id="diceSub">Pick a target and roll</div></div>
+                <div>
+                  <div class="track"><div class="zone" id="diceZone"></div><div class="marker" id="diceMarker" style="left:50%">50.00</div></div>
+                  <div class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FAIR -->
+        <section data-pane="fair" class="t-dice" hidden>
+          <div class="fair-grid">
+            <div class="panel pad stack">
+              <div><div class="eyebrow">Active seed pair</div><h2 style="margin-top:6px">Committed before you bet</h2></div>
+              <div class="field"><label>Server seed (SHA-256 hash)</label><div class="hash" id="fSrvHash">…</div></div>
+              <div class="row">
+                <div class="field"><label for="fClient">Client seed</label><input class="input num" id="fClient"></div>
+                <button class="btn" id="fClientSave">Save</button>
+              </div>
+              <div class="kv"><span>Next nonce</span><span class="num" id="fNonce">0</span></div>
+              <button class="btn btn-go" id="fRotate">Rotate seed and reveal current</button>
+              <p class="hint" style="margin:0">Rotating reveals the plain server seed so you can check that it hashes to the value above and reproduce every bet made with it.</p>
+            </div>
+            <div class="panel pad stack">
+              <div><div class="eyebrow">Verifier</div><h2 style="margin-top:6px">Recompute any result</h2></div>
+              <div class="row">
+                <div class="field"><label for="vGame">Game</label><select class="input" id="vGame"><option value="crash">Crash</option><option value="plinko">Plinko</option><option value="slots">Lucky 777</option><option value="wheel">Wheel</option><option value="mines">Mines</option><option value="dice">Dice</option></select></div>
+                <div class="field"><label for="vNonce">Nonce</label><input class="input num" id="vNonce" type="number" min="0" value="0"></div>
+              </div>
+              <div class="field"><label for="vServer">Server seed (revealed)</label><input class="input num" id="vServer" placeholder="64 hex characters"></div>
+              <div class="field"><label for="vClient">Client seed</label><input class="input num" id="vClient"></div>
+              <div class="row">
+                <div class="field" id="vEdgeF"><label for="vEdge">House edge %</label><input class="input num" id="vEdge" type="number" step="0.1" value="1"></div>
+                <div class="field" id="vMinesF" hidden><label for="vMines">Mines</label><input class="input num" id="vMines" type="number" min="1" max="24" value="3"></div>
+                <div class="field" id="vRowsF" hidden><label for="vRows">Rows</label><select class="input" id="vRows"><option>8</option><option selected>12</option><option>16</option></select></div>
+                <div class="field" id="vWRiskF" hidden><label for="vWRisk">Wheel risk</label><select class="input" id="vWRisk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+                <div class="field" id="vRiskF" hidden><label for="vRisk">Risk</label><select class="input" id="vRisk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+              </div>
+              <button class="btn btn-go" id="vRun">Verify</button>
+              <div id="vOut" class="stack" style="gap:8px"></div>
+            </div>
+          </div>
+          <section>
+            <h3 style="margin-bottom:10px">Revealed seeds</h3>
+            <div class="tbl-wrap"><table><thead><tr><th>Revealed</th><th>Server seed</th><th>Hash</th><th>Client seed</th><th class="r">Bets</th><th></th></tr></thead><tbody id="fRevealed"></tbody></table></div>
+          </section>
+        </section>
+
+        <section>
+          <h3 style="margin:8px 0 10px">My bets</h3>
+          <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Game</th><th class="r">Bet</th><th class="r">Result</th><th class="r">Payout</th><th class="r">Profit</th><th class="r">Nonce</th><th></th></tr></thead><tbody id="myBets"></tbody></table></div>
+        </section>
+      </main>
+
+      <aside class="panel pad feed">
+        <h3><span class="live-dot"></span>Live bets</h3>
+        <ul id="feed"></ul>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div id="admin" hidden>
+  <div class="wrap admin">
+    <nav class="anav" role="tablist" aria-label="Back office">
+      <button data-atab="overview" aria-selected="true">Overview</button>
+      <button data-atab="players" aria-selected="false">Players</button>
+      <button data-atab="payments" aria-selected="false">Payments <span class="badge" id="pendBadge" hidden>0</span></button>
+      <button data-atab="games" aria-selected="false">Games &amp; RTP</button>
+    </nav>
+    <div style="min-width:0">
+      <div data-apane="overview">
+        <div class="ahead"><div><h2>Today</h2><p>Live figures for this demo session. Simulated players bet in the background.</p></div><span class="chip ok">Live</span></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="panel pad">
+          <div class="ahead" style="margin-bottom:8px"><h3>GGR by hour, USDT</h3><span class="hint">Gross gaming revenue = stakes − payouts</span></div>
+          <div class="chart-wrap" id="chart"></div>
+        </div>
+        <div class="two">
+          <div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="r">Target RTP</th><th class="r">Actual RTP</th><th class="r">Turnover</th><th class="r">GGR</th></tr></thead><tbody id="rtpTbl"></tbody></table></div>
+          <div class="panel pad"><h3>Largest wins today</h3><div id="bigWins" class="stack" style="gap:6px;margin-top:10px"></div></div>
+        </div>
+      </div>
+
+      <div data-apane="players" hidden>
+        <div class="ahead"><div><h2>Players</h2><p>KYC state, account status and lifetime play.</p></div></div>
+        <div class="toolbar">
+          <input class="input" id="pSearch" placeholder="Search by username" aria-label="Search players">
+          <select class="input" id="pFilter" style="max-width:180px" aria-label="Filter by status"><option value="all">All statuses</option><option value="active">Active</option><option value="blocked">Blocked</option><option value="excluded">Self-excluded</option><option value="kyc">KYC pending</option></select>
+        </div>
+        <div class="tbl-wrap"><table style="min-width:860px"><thead><tr><th>Player</th><th>Country</th><th>KYC</th><th>Status</th><th class="r">Balance</th><th class="r">Wagered</th><th class="r">Player P/L</th><th>Last seen</th><th class="r">Actions</th></tr></thead><tbody id="pTbl"></tbody></table></div>
+      </div>
+
+      <div data-apane="payments" hidden>
+        <div class="ahead"><div><h2>Payments</h2><p>Deposits are credited after network confirmations. Withdrawals wait for manual review.</p></div></div>
+        <div class="toolbar">
+          <div class="seg"><button data-pf="all" aria-pressed="true">All</button><button data-pf="pending" aria-pressed="false">Pending review</button><button data-pf="deposit" aria-pressed="false">Deposits</button><button data-pf="withdrawal" aria-pressed="false">Withdrawals</button></div>
+        </div>
+        <div class="tbl-wrap"><table style="min-width:820px"><thead><tr><th>Time</th><th>Tx ID</th><th>Player</th><th>Type</th><th>Network</th><th class="r">Amount</th><th>Status</th><th class="r">Review</th></tr></thead><tbody id="payTbl"></tbody></table></div>
+      </div>
+
+      <div data-apane="games" hidden>
+        <div class="ahead"><div><h2>Games &amp; RTP</h2><p>Changes apply to the next bet. Target RTP = 100% − house edge.</p></div></div>
+        <div class="gset" id="gset"></div>
+        <div class="panel pad stack" style="margin-top:14px">
+          <h3>Seed management</h3>
+          <div class="field"><label>Active server seed hash</label><div class="hash" id="aSrvHash">…</div></div>
+          <div class="kv"><span>Bets on this seed</span><span class="num" id="aNonce">0</span></div>
+          <div><button class="btn" id="aRotate">Force seed rotation</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap"><span>Lumen Vault · demo build for licensing and investor review</span><span>Not a real-money service. No funds are accepted or paid out.</span></div></footer>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="sg7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a8f"/><stop offset=".55" stop-color="#ff1f4b"/><stop offset="1" stop-color="#b3002d"/></linearGradient>
+  <linearGradient id="sgGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset="1" stop-color="#ffb300"/></linearGradient>
+  <linearGradient id="sgDia" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8fbff"/><stop offset="1" stop-color="#2f8bff"/></linearGradient>
+  <linearGradient id="sgPlum" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d79bff"/><stop offset="1" stop-color="#7a2bd6"/></linearGradient>
+  <linearGradient id="sgLemon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff9a8"/><stop offset="1" stop-color="#ffd000"/></linearGradient>
+  <linearGradient id="sgCherry" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a8a"/><stop offset="1" stop-color="#d10032"/></linearGradient>
+</defs></svg>
+<canvas id="fx"></canvas>
+<div id="modalRoot"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmt = n => Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = n => Math.round(n).toLocaleString('en-US');
+const fmtM = m => m >= 100 ? fmt0(m) : m >= 10 ? m.toFixed(1) : m.toFixed(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const enc = new TextEncoder();
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+const randHex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return hex(a.buffer); };
+const sha256 = async s => hex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
+async function hmac(key, msg) {
+  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return hex(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
+}
+async function floats(server, client, nonce, count) {
+  const out = []; let round = 0;
+  while (out.length < count) {
+    const h = await hmac(server, `${client}:${nonce}:${round}`);
+    for (let i = 0; i < 8 && out.length < count; i++) out.push(parseInt(h.slice(i * 8, i * 8 + 8), 16) / 4294967296);
+    round++;
+  }
+  return out;
+}
+const cssv = (n, el = document.documentElement) => getComputedStyle(el).getPropertyValue(n).trim();
+const timeStr = d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- provably fair formulas ---------- */
+const RISKB = { low: 1.2, medium: 1.5, high: 2.1 };
+const binom = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; };
+function plinkoTable(n, risk, edge) {
+  const raw = []; let e = 0;
+  for (let k = 0; k <= n; k++) { const v = RISKB[risk] ** Math.abs(k - n / 2); raw.push(v); e += binom(n, k) / 2 ** n * v; }
+  const s = (1 - edge / 100) / e;
+  return raw.map(v => { const m = v * s; return m >= 10 ? Math.round(m * 10) / 10 : Math.round(m * 100) / 100; });
+}
+const Fair = {
+  crash: (f, edge) => Math.min(1000, Math.max(1, Math.floor((1 - edge / 100) / (1 - f[0]) * 100) / 100)),
+  dice: f => Math.floor(f[0] * 10001) / 100,
+  mines: (f, m) => {
+    const t = [...Array(25).keys()];
+    for (let i = 0; i < 24; i++) { const j = i + Math.floor(f[i] * (25 - i)); [t[i], t[j]] = [t[j], t[i]]; }
+    return t.slice(0, m).sort((a, b) => a - b);
+  },
+  plinko: (f, rows) => f.slice(0, rows).map(x => x < 0.5 ? -1 : 1),
+  wheel: f => Math.floor(f[0] * 30),
+  slots: f => f.slice(0, 3).map(x => Math.floor(x * 32))
+};
+
+/* wheel: 30 segments per risk, scaled so the mean multiplier equals 1 − edge */
+const WHEEL_RAW = {
+  low: Array.from({ length: 30 }, (_, i) => [1.5, 1.2, 1.2, 0, 1.2, 1.5][i % 6]),
+  medium: [0, 1.5, 0, 2, 0, 1.5, 0, 3, 0, 1.5, 0, 2, 0, 1.5, 0, 5, 0, 1.5, 0, 2, 0, 1.5, 0, 3, 0, 1.5, 0, 2, 0, 1.7],
+  high: [1, ...Array(29).fill(0)]
+};
+function wheelTable(risk, edge) {
+  const raw = WHEEL_RAW[risk], mean = raw.reduce((a, b) => a + b, 0) / raw.length, s = (1 - edge / 100) / mean;
+  return raw.map(v => Math.round(v * s * 100) / 100);
+}
+
+/* slots: 7 symbols, weighted virtual reels of 32 stops, paytable scaled to target RTP */
+const SYM = ['seven', 'bar', 'diamond', 'bell', 'plum', 'lemon', 'cherry'];
+const SYM_W = [2, 3, 4, 5, 6, 6, 6];
+const STRIPS = [11, 23, 37].map(sd => { let s = sd; const r = () => { s = (s * 1103515245 + 12345) >>> 0; return s / 4294967296; };
+  const a = SYM_W.flatMap((w, i) => Array(w).fill(i)); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; });
+const PAY_RAW = { three: [300, 60, 30, 20, 12, 10, 8], two7: 10, twoCh: 2.5, oneCh: 0.8, mix: 5 };
+function slotKey(s) {
+  if (s[0] === s[1] && s[1] === s[2]) return 'three' + s[0];
+  if (s.every(x => x <= 1)) return 'mix';
+  const n7 = s.filter(x => x === 0).length, nc = s.filter(x => x === 6).length;
+  if (n7 === 2) return 'two7'; if (nc === 2) return 'twoCh'; if (nc === 1) return 'oneCh'; return null;
+}
+const rawOf = (p, k) => k.startsWith('three') ? p.three[+k.slice(5)] : p[k];
+function slotPaytable(edge) {
+  let ev = 0;
+  for (let a = 0; a < 7; a++) for (let b = 0; b < 7; b++) for (let c = 0; c < 7; c++) { const k = slotKey([a, b, c]); if (k) ev += SYM_W[a] * SYM_W[b] * SYM_W[c] / 32768 * rawOf(PAY_RAW, k); }
+  const sc = (1 - edge / 100) / ev, r = v => { const m = v * sc; return m >= 100 ? Math.round(m) : m >= 10 ? Math.round(m * 10) / 10 : Math.round(m * 100) / 100; };
+  return { three: PAY_RAW.three.map(r), two7: r(PAY_RAW.two7), twoCh: r(PAY_RAW.twoCh), oneCh: r(PAY_RAW.oneCh), mix: r(PAY_RAW.mix) };
+}
+const slotMult = (stops, edge) => { const s = stops.map((x, i) => STRIPS[i][x]), k = slotKey(s); return { syms: s, key: k, mult: k ? rawOf(slotPaytable(edge), k) : 0 }; };
+const minesMult = (m, k, edge) => { let x = 1; for (let i = 0; i < k; i++) x *= (25 - i) / (25 - m - i); return Math.floor(x * (1 - edge / 100) * 100) / 100; };
+
+/* ---------- state ---------- */
+const GAMES = {
+  crash: { name: 'Crash', edge: 1, min: 0.1, max: 500, enabled: true },
+  plinko: { name: 'Plinko', edge: 1, min: 0.1, max: 200, enabled: true },
+  slots: { name: 'Lucky 777', edge: 3, min: 0.1, max: 100, enabled: true },
+  wheel: { name: 'Wheel', edge: 1.5, min: 0.1, max: 500, enabled: true },
+  mines: { name: 'Mines', edge: 2, min: 0.1, max: 500, enabled: true },
+  dice: { name: 'Dice', edge: 1, min: 0.1, max: 1000, enabled: true }
+};
+const S = { balance: 1000, bets: [], betId: 0, view: 'player', tab: 'lobby' };
+const seed = { server: '', hash: '', client: randHex(8), nonce: 0, revealed: [] };
+
+let rs = 20261014; const rnd = () => { rs = (rs * 1664525 + 1013904223) >>> 0; return rs / 4294967296; };
+const me = { id: 'demo_player', you: true, country: 'MT', kyc: 'verified', status: 'active', balance: 1000, wagered: 0, net: 0, seen: 'now' };
+const players = [me, ...[
+  ['nordwind_77', 'NO', 'verified', 'active'], ['satoshi.fan', 'BR', 'verified', 'active'], ['lucky_mira', 'JP', 'pending', 'active'],
+  ['kai.brn', 'NZ', 'verified', 'active'], ['vela_r', 'MX', 'verified', 'active'], ['hashpilot', 'CA', 'verified', 'active'],
+  ['andrea.b', 'CL', 'none', 'active'], ['m0onshot', 'PE', 'pending', 'active'], ['lena_k', 'MT', 'verified', 'excluded'],
+  ['grim.ox', 'ZA', 'verified', 'blocked'], ['tidewalker', 'PH', 'verified', 'active'], ['ojo.de.oro', 'AR', 'pending', 'active']
+].map(([id, country, kyc, status]) => ({ id, country, kyc, status, balance: Math.round(rnd() * 2400 * 100) / 100, wagered: Math.round(rnd() * 40000), net: Math.round((rnd() - .62) * 3000), seen: status === 'active' ? `${1 + Math.floor(rnd() * 40)} min ago` : `${1 + Math.floor(rnd() * 9)} d ago` }))];
+const byId = id => players.find(p => p.id === id);
+
+const nowH = new Date().getHours();
+const stats = { hourly: Array.from({ length: 24 }, (_, h) => { if (h > nowH) return { t: 0, g: 0 }; const t = 2500 + rnd() * 9000; return { t, g: t * (0.005 + rnd() * 0.05) * (rnd() < .18 ? -1.6 : 1) }; }), bets: 0, deposits: 0, withdrawals: 0, byGame: {}, bigWins: [] };
+(() => { const T = stats.hourly.reduce((a, x) => a + x.t, 0), G = stats.hourly.reduce((a, x) => a + x.g, 0);
+  const sp = { crash: [.3, .24], plinko: [.18, .16], slots: [.14, .22], wheel: [.1, .1], mines: [.12, .18], dice: [.16, .1] };
+  for (const g in sp) stats.byGame[g] = { t: T * sp[g][0], g: G * sp[g][1] };
+  stats.bets = Math.round(T / 19); })();
+
+const txs = [];
+function addTx(player, type, net, amount, status, minsAgo = 0) {
+  const tx = { id: 'tx_' + randHex(4), time: new Date(Date.now() - minsAgo * 60000), player, type, net, amount, status };
+  txs.unshift(tx);
+  if (status === 'completed') stats[type === 'deposit' ? 'deposits' : 'withdrawals'] += amount;
+  return tx;
+}
+[['hashpilot', 'deposit', 'USDT · TRC20', 500, 'completed', 212], ['nordwind_77', 'deposit', 'BTC', 1250, 'completed', 180], ['kai.brn', 'withdrawal', 'USDT · TRC20', 320, 'completed', 150],
+ ['vela_r', 'deposit', 'ETH', 800, 'completed', 122], ['satoshi.fan', 'withdrawal', 'BTC', 2100, 'pending', 64], ['tidewalker', 'deposit', 'USDT · ERC20', 150, 'completed', 51],
+ ['lucky_mira', 'deposit', 'LTC', 90, 'completed', 33], ['m0onshot', 'withdrawal', 'USDT · TRC20', 640, 'pending', 18], ['ojo.de.oro', 'deposit', 'USDT · TRC20', 300, 'completed', 6]
+].forEach(a => addTx(...a));
+
+/* ---------- FX: confetti / sparks ---------- */
+const fx = { parts: [], running: false };
+const PALETTE = () => ['--c-plinko', '--c-crash', '--c-crash2', '--c-mines', '--c-dice', '--c-plinko2'].map(v => cssv(v));
+function burst(x, y, n = 70, colors = PALETTE(), spread = 1) {
+  if (RM) return;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = (3 + Math.random() * 7) * spread;
+    fx.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 4, r: 3 + Math.random() * 4, rot: Math.random() * 6, vr: (Math.random() - .5) * .4, c: colors[i % colors.length], life: 1, sq: Math.random() < .6 });
+  }
+  if (!fx.running) { fx.running = true; requestAnimationFrame(fxLoop); }
+}
+function burstAt(el, n, colors) { const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, n, colors); }
+function fxLoop() {
+  const c = $('#fx'), dpr = window.devicePixelRatio || 1, w = innerWidth, h = innerHeight;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+  fx.parts = fx.parts.filter(p => p.life > 0 && p.y < h + 20);
+  for (const p of fx.parts) {
+    p.vy += 0.28; p.vx *= 0.985; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= 0.011;
+    x.save(); x.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5)); x.translate(p.x, p.y); x.rotate(p.rot); x.fillStyle = p.c;
+    if (p.sq) x.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); else { x.beginPath(); x.arc(0, 0, p.r * .7, 0, 7); x.fill(); }
+    x.restore();
+  }
+  if (fx.parts.length) requestAnimationFrame(fxLoop); else { fx.running = false; x.clearRect(0, 0, w, h); }
+}
+
+/* ---------- utilities ---------- */
+function toast(msg, kind = '') {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), 3800);
+}
+function updBal(win) {
+  $('#bal').textContent = fmt(S.balance); me.balance = S.balance; renderPotentials();
+  if (win) { const b = $('#balBox'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+}
+function canPlay() {
+  if (me.status !== 'active') { toast('Your account is restricted by the operator.', 'bad'); return false; }
+  return true;
+}
+function readBet(game) {
+  if (!canPlay()) return null;
+  const g = GAMES[game];
+  if (!g.enabled) { toast(`${g.name} is paused by the operator.`, 'bad'); return null; }
+  const v = Math.round(parseFloat($(`#${game}Bet`).value) * 100) / 100;
+  if (!(v > 0)) { toast('Enter a bet amount.', 'bad'); return null; }
+  if (v < g.min) { toast(`Minimum bet for ${g.name} is ${fmt(g.min)} USDT.`, 'bad'); return null; }
+  if (v > g.max) { toast(`Maximum bet for ${g.name} is ${fmt(g.max)} USDT.`, 'bad'); return null; }
+  if (v > S.balance) { toast('Not enough balance. Use Deposit to add demo funds.', 'bad'); return null; }
+  return v;
+}
+const takeNonce = () => seed.nonce++;
+
+/* ---------- stats + feed ---------- */
+const feed = [];
+function recordStats(game, amount, payout, who, mult) {
+  const h = stats.hourly[new Date().getHours()];
+  h.t += amount; h.g += amount - payout;
+  stats.byGame[game].t += amount; stats.byGame[game].g += amount - payout;
+  stats.bets++;
+  const p = byId(who); if (p) { p.wagered += amount; p.net += payout - amount; if (!p.you) p.seen = 'now'; }
+  feed.unshift({ who, game, amount, mult, payout, time: new Date() }); if (feed.length > 16) feed.pop();
+  if (payout >= 150) { stats.bigWins.push({ who, game, amount, mult, payout, time: new Date() }); stats.bigWins.sort((a, b) => b.payout - a.payout); stats.bigWins.length = Math.min(stats.bigWins.length, 6); }
+  renderFeed();
+}
+function renderFeed() {
+  $('#feed').innerHTML = feed.map(b => `<li class="t-${b.game}"><i></i><span class="who">${esc(b.who)}<small>${GAMES[b.game].name}</small></span><span class="num">${fmt(b.amount)}</span><span class="num ${b.payout > b.amount ? 'win' : 'muted'}">${b.payout > 0 ? fmtM(b.mult) + '×' : '—'}</span></li>`).join('');
+  $('#heroTurn').textContent = fmt0(stats.hourly.reduce((a, x) => a + x.t, 0));
+  $('#heroBets').textContent = fmt0(stats.bets);
+}
+function botBet(silent) {
+  const pool = players.filter(p => !p.you && p.status === 'active');
+  const p = pool[Math.floor(Math.random() * pool.length)];
+  const games = Object.keys(GAMES).filter(g => GAMES[g].enabled); if (!games.length) return;
+  const game = games[Math.floor(Math.random() * games.length)];
+  const amount = Math.min(GAMES[game].max, [0.5, 1, 2, 5, 10, 20, 25, 50, 100, 250][Math.floor(Math.random() ** 1.6 * 10)]);
+  const m = Math.max(1.05, Math.floor(1 / (1 - Math.random() * 0.93) * 100) / 100);
+  const win = Math.random() < (1 - GAMES[game].edge / 100) / m;
+  recordStats(game, amount, win ? amount * m : 0, p.id, m);
+  if (!silent && S.view === 'admin') renderAdminLive();
+}
+
+/* ---------- my bets ---------- */
+function logBet(b) {
+  b.id = ++S.betId; b.time = new Date(); b.profit = b.payout - b.amount;
+  S.bets.unshift(b);
+  recordStats(b.game, b.amount, b.payout, 'demo_player', b.mult);
+  renderMyBets();
+}
+function renderMyBets() {
+  const tb = $('#myBets');
+  if (!S.bets.length) { tb.innerHTML = `<tr><td colspan="8" class="empty">No bets yet. Pick a game above. You start with 1,000.00 demo USDT.</td></tr>`; return; }
+  tb.innerHTML = S.bets.slice(0, 30).map(b => `<tr><td class="num muted">${timeStr(b.time)}</td><td><span class="gtag t-${b.game}">${GAMES[b.game].name}</span></td><td class="r num">${fmt(b.amount)}</td><td class="r num">${b.payout > 0 ? fmtM(b.mult) + '×' : '<span class="muted">' + esc(b.detail) + '</span>'}</td><td class="r num">${fmt(b.payout)}</td><td class="r num ${b.profit >= 0 ? 'win' : 'loss'}">${b.profit >= 0 ? '+' : ''}${fmt(b.profit)}</td><td class="r num muted">${b.nonce}</td><td class="r"><button class="linkbtn" data-verify="${b.id}">Verify</button></td></tr>`).join('');
+}
+
+/* ---------- navigation ---------- */
+function setView(v) {
+  S.view = v;
+  $('#vPlayer').setAttribute('aria-pressed', v === 'player'); $('#vAdmin').setAttribute('aria-pressed', v === 'admin');
+  $('#player').hidden = v !== 'player'; $('#admin').hidden = v !== 'admin'; $('#walletBox').hidden = v !== 'player';
+  if (v === 'admin') renderAdminAll(); else { renderPlayerState(); requestAnimationFrame(() => { drawCrash(); drawPlinko(); }); }
+  window.scrollTo(0, 0);
+}
+function setPTab(t) {
+  S.tab = t;
+  $$('[data-ptab]').forEach(b => b.setAttribute('aria-selected', b.dataset.ptab === t));
+  $$('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== t);
+  if (t === 'crash') requestAnimationFrame(drawCrash);
+  if (t === 'plinko') requestAnimationFrame(() => { plLayout(); drawPlinko(); });
+  if (t === 'wheel') requestAnimationFrame(drawWheel);
+  if (t === 'fair') renderFair();
+}
+function setATab(t) {
+  $$('[data-atab]').forEach(b => b.setAttribute('aria-selected', b.dataset.atab === t));
+  $$('[data-apane]').forEach(p => p.hidden = p.dataset.apane !== t);
+  renderAdminAll();
+}
+$('#vPlayer').onclick = () => setView('player');
+$('#vAdmin').onclick = () => setView('admin');
+$$('[data-ptab]').forEach(b => b.onclick = () => setPTab(b.dataset.ptab));
+$$('[data-atab]').forEach(b => b.onclick = () => setATab(b.dataset.atab));
+
+/* ---------- lobby ---------- */
+const ART = {
+  crash: `<svg viewBox="0 0 120 80"><path d="M6 74 C42 72 72 58 100 22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><g transform="translate(104 16) rotate(-48)"><path d="M0-12 C6-6 6 6 4 12 H-4 C-6 6-6-6 0-12Z" fill="currentColor"/><circle cy="-2" r="2.6" fill="#fff"/><path d="M-4 12 L-8 18 L-3 15 Z M4 12 L8 18 L3 15Z" fill="currentColor"/></g><g fill="#fff"><circle cx="20" cy="18" r="2"/><circle cx="58" cy="10" r="1.5"/><circle cx="34" cy="40" r="1.4"/><circle cx="86" cy="56" r="1.6"/></g></svg>`,
+  plinko: `<svg viewBox="0 0 120 80"><g fill="currentColor" opacity=".55">${[[60,10],[50,24],[70,24],[40,38],[60,38],[80,38],[30,52],[50,52],[70,52],[90,52]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.2"/>`).join('')}</g><circle cx="57" cy="31" r="6" fill="#fff"/><g fill="currentColor">${[16,34,52,70,88].map((x,i)=>`<rect x="${x}" y="64" width="15" height="11" rx="3" opacity="${[1,.6,.4,.6,1][i]}"/>`).join('')}</g></svg>`,
+  mines: `<svg viewBox="0 0 120 80"><g fill="currentColor" opacity=".3">${[0,1,2,3].flatMap(r=>[0,1,2,3].map(c=>r===1&&c===1||r===2&&c===2?'':`<rect x="${22+c*20}" y="${2+r*19}" width="16" height="16" rx="4"/>`)).join('')}</g><path d="M42 23h12l4 6-10 10-10-10z" fill="#fff"/><circle cx="70" cy="48" r="6.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2"><path d="M70 39v18M61 48h18"/></g></svg>`,
+  dice: `<svg viewBox="0 0 120 80"><rect x="18" y="14" width="50" height="50" rx="12" fill="#fff"/><g fill="currentColor"><circle cx="31" cy="27" r="5"/><circle cx="43" cy="39" r="5"/><circle cx="55" cy="51" r="5"/></g><rect x="66" y="26" width="38" height="38" rx="9" transform="rotate(14 85 45)" fill="currentColor" opacity=".55"/></svg>`
+};
+ART.slots = `<svg viewBox="0 0 120 80"><rect x="10" y="10" width="100" height="60" rx="12" fill="#13091f" opacity=".85"/>${[0, 1, 2].map(i => `<rect x="${17 + i * 30}" y="17" width="26" height="46" rx="6" fill="#fff"/><text x="${30 + i * 30}" y="52" text-anchor="middle" font-family="Unbounded,Arial Black,sans-serif" font-weight="800" font-size="30" fill="url(#sg7)">7</text>`).join('')}<rect x="12" y="37" width="96" height="2" fill="#fff" opacity=".7"/></svg>`;
+ART.wheel = `<svg viewBox="0 0 120 80"><g transform="translate(60 42)">${Array.from({ length: 12 }, (_, i) => { const a0 = i * Math.PI / 6, a1 = a0 + Math.PI / 6, r = 34; return `<path d="M0 0 L${(Math.sin(a0) * r).toFixed(1)} ${(-Math.cos(a0) * r).toFixed(1)} A${r} ${r} 0 0 1 ${(Math.sin(a1) * r).toFixed(1)} ${(-Math.cos(a1) * r).toFixed(1)}Z" fill="${i % 2 ? '#13091f' : '#fff'}" opacity="${i % 2 ? .7 : .95}"/>`; }).join('')}<circle r="8" fill="#13091f"/></g><path d="M54 2h12l-6 10z" fill="#13091f"/></svg>`;
+const BLURB = { slots: 'Classic three-reel 777 with a jackpot line.', wheel: 'Pick your risk and spin for up to 30×.', crash: 'Ride the rocket, cash out before it blows.', plinko: 'Drop balls through the pegs, up to 80× on the edges.', mines: 'Flip tiles for gems, dodge the mines.', dice: 'Set your own odds from 2% to 98%.' };
+function renderLobby() {
+  $('#lobbyCards').innerHTML = Object.entries(GAMES).map(([k, g]) => `<button class="gcard t-${k} ${g.enabled ? '' : 'off'}" data-go="${k}"><div class="art">${ART[k]}</div><div class="body"><h3>${g.name}</h3><div class="muted" style="font-size:13px">${BLURB[k]}</div><div class="meta"><span>RTP <b class="num" style="color:var(--fg)">${(100 - g.edge).toFixed(1)}%</b></span><span>${g.enabled ? 'Max ' + fmt0(g.max) + ' USDT' : '<span class="loss">Paused</span>'}</span></div></div></button>`).join('');
+  $$('[data-go]').forEach(b => b.onclick = () => setPTab(b.dataset.go));
+}
+function renderPlayerState() {
+  $('#blockedBanner').hidden = me.status === 'active';
+  $('#blockedBanner').textContent = me.status === 'excluded' ? 'Your account is self-excluded. Betting is disabled until the exclusion period ends.' : 'Your account is restricted by the operator. Betting is disabled.';
+  for (const k in GAMES) {
+    $(`[data-paused="${k}"]`).hidden = GAMES[k].enabled;
+    $(`[data-limits="${k}"]`).textContent = `Min ${fmt(GAMES[k].min)} · Max ${fmt(GAMES[k].max)} USDT`;
+  }
+  renderLobby(); renderPotentials(); updDice(); updMinesInfo(); plUpdate(); whUpdate(); renderPaytable();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-adj]'); if (!b) return;
+  const [id, f] = b.dataset.adj.split(':'); const inp = $('#' + id);
+  inp.value = Math.max(0.1, Math.round((parseFloat(inp.value) || 0) * parseFloat(f) * 100) / 100).toFixed(2);
+  renderPotentials(); updDice();
+});
+
+/* ---------- CRASH ---------- */
+const K = 0.12;
+const crash = { state: 'idle', point: 1, mult: 1, elapsed: 0, bet: 0, auto: 0, cashed: false, cashMult: 0, bots: [], hist: [], sparks: [] };
+const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.4 + .3, s: Math.random() * .6 + .2 }));
+function makeBots() {
+  const pool = players.filter(p => !p.you && p.status === 'active').sort(() => Math.random() - .5).slice(0, 5);
+  return pool.map(p => ({ id: p.id, amount: [1, 5, 10, 20, 50, 100][Math.floor(Math.random() * 6)], target: Math.floor((1.1 + Math.random() ** 2 * 8) * 100) / 100, cashed: false }));
+}
+function renderPotentials() {
+  const b = parseFloat($('#crashBet').value) || 0, a = parseFloat($('#crashAuto').value) || 0;
+  $('#crashPot').textContent = a >= 1.01 ? fmt(b * a) : 'manual';
+}
+$('#crashBet').oninput = renderPotentials; $('#crashAuto').oninput = renderPotentials;
+async function crashStart() {
+  const amt = readBet('crash'); if (amt == null) return;
+  const auto = parseFloat($('#crashAuto').value) || 0;
+  const nonce = takeNonce(); const edge = GAMES.crash.edge;
+  const f = await floats(seed.server, seed.client, nonce, 1);
+  S.balance -= amt; updBal();
+  Object.assign(crash, { state: 'running', point: Fair.crash(f, edge), mult: 1, elapsed: 0, bet: amt, auto: auto >= 1.01 ? auto : 0, cashed: false, cashMult: 0, nonce, hash: seed.hash, client: seed.client, edge, start: performance.now(), bots: makeBots(), sparks: [] });
+  updCrashUI(); requestAnimationFrame(crashLoop);
+}
+function crashCash(at) {
+  if (crash.cashed || crash.state !== 'running') return;
+  crash.cashed = true; crash.cashMult = at;
+  const payout = Math.round(crash.bet * at * 100) / 100;
+  S.balance += payout; updBal(true);
+  logBet({ game: 'crash', amount: crash.bet, mult: at, payout, nonce: crash.nonce, hash: crash.hash, client: crash.client, edge: crash.edge, detail: '' });
+  burstAt($('#crashMult'), at >= 3 ? 90 : 45);
+  toast(`Cashed out at ${fmt(at)}× · +${fmt(payout - crash.bet)} USDT`, 'ok');
+}
+function crashLoop(now) {
+  if (crash.state !== 'running') return;
+  crash.elapsed = (now - crash.start) / 1000;
+  let m = Math.floor(Math.exp(K * crash.elapsed) * 100) / 100;
+  if (crash.auto && !crash.cashed && m >= crash.auto && crash.auto <= crash.point) crashCash(crash.auto);
+  crash.bots.forEach(b => { if (!b.cashed && m >= b.target && b.target <= crash.point) b.cashed = true; });
+  if (m >= crash.point) { crash.mult = crash.point; crashEnd(); return; }
+  crash.mult = m; drawCrash(); updCrashUI();
+  requestAnimationFrame(crashLoop);
+}
+function crashEnd() {
+  crash.state = 'crashed';
+  if (!crash.cashed) logBet({ game: 'crash', amount: crash.bet, mult: crash.point, payout: 0, nonce: crash.nonce, hash: crash.hash, client: crash.client, edge: crash.edge, detail: 'bust ' + fmt(crash.point) + '×' });
+  crash.bots.forEach(b => recordStats('crash', b.amount, b.cashed ? b.amount * b.target : 0, b.id, b.target));
+  crash.hist.unshift(crash.point); if (crash.hist.length > 14) crash.hist.pop();
+  // explosion
+  const t = crash.tip || { x: 0, y: 0 };
+  const cols = [cssv('--c-crash'), cssv('--c-crash2'), '#ffffff', cssv('--loss')];
+  if (!RM) for (let i = 0; i < 60; i++) { const a = Math.random() * 7, s = 1 + Math.random() * 5; crash.sparks.push({ x: t.x, y: t.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, c: cols[i % 4], r: 1.5 + Math.random() * 3 }); }
+  const boom = () => { crash.sparks = crash.sparks.filter(p => p.life > 0); crash.sparks.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .08; p.vx *= .97; p.life -= .022; }); drawCrash(); if (crash.sparks.length) requestAnimationFrame(boom); };
+  requestAnimationFrame(boom);
+  updCrashUI();
+  setTimeout(() => { if (crash.state === 'crashed') { crash.state = 'idle'; updCrashUI(); } }, 1900);
+}
+function updCrashUI() {
+  const btn = $('#crashBtn'), mult = $('#crashMult'), sub = $('#crashSub');
+  mult.textContent = fmt(crash.mult) + '×';
+  mult.className = 'crash-mult ' + (crash.state === 'crashed' ? 'bust' : crash.cashed ? 'cashed' : crash.state === 'running' ? 'flying' : '');
+  btn.className = 'btn btn-big ' + (crash.state === 'running' && !crash.cashed ? 'btn-cash' : 'btn-go');
+  if (crash.state === 'idle') { btn.disabled = false; btn.textContent = 'Place bet'; sub.textContent = crash.hist.length ? 'Ready for the next launch' : 'Place a bet to launch'; }
+  else if (crash.state === 'running') {
+    btn.disabled = crash.cashed;
+    btn.textContent = crash.cashed ? `Cashed out at ${fmt(crash.cashMult)}×` : `Cash out ${fmt(crash.bet * crash.mult)}`;
+    sub.textContent = crash.cashed ? `You won ${fmt(crash.bet * crash.cashMult)} USDT` : `Bet ${fmt(crash.bet)} USDT${crash.auto ? ' · auto at ' + fmt(crash.auto) + '×' : ''}`;
+  } else { btn.disabled = true; btn.textContent = 'Round over'; sub.textContent = crash.cashed ? `Blew up at ${fmt(crash.point)}× · you cashed at ${fmt(crash.cashMult)}×` : `Blew up at ${fmt(crash.point)}×`; }
+  $('#crashHist').innerHTML = crash.hist.map(p => `<span class="pill ${p >= 10 ? 'top' : p >= 2 ? 'hi' : p < 1.2 ? 'lo' : ''}">${fmt(p)}×</span>`).join('');
+  $('#crashBots').innerHTML = crash.bots.length ? crash.bots.map(b => `<div><span class="${b.cashed ? 'cashed' : crash.state === 'crashed' ? 'bust' : ''}">${esc(b.id)}</span><span class="num ${b.cashed ? 'cashed' : 'muted'}">${b.cashed ? fmt(b.target) + '×' : fmt(b.amount)}</span></div>`).join('') : '<div><span class="muted">Waiting for bets…</span></div>';
+}
+$('#crashBtn').onclick = () => { if (crash.state === 'idle') crashStart(); else if (crash.state === 'running') crashCash(crash.mult); };
+const niceStep = (range, maxTicks, steps) => steps.find(s => range / s <= maxTicks) || steps[steps.length - 1];
+function fitCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+  return { x, w, h };
+}
+function drawCrash() {
+  const c = $('#crashCanvas'); if (!c.offsetParent) return;
+  const { x, w, h } = fitCanvas(c);
+  const sec = $('[data-pane="crash"]'), g1 = cssv('--g1', sec), g2 = cssv('--g2', sec);
+  const L = 46, B = 28, T = 48, R = 18, pw = w - L - R, ph = h - T - B;
+  // stars drift with time
+  x.fillStyle = '#ffffff';
+  for (const s of stars) { const sx = ((s.x - crash.elapsed * 0.02 * s.s) % 1 + 1) % 1; x.globalAlpha = .15 + s.s * .5; x.beginPath(); x.arc(sx * w, s.y * h, s.r, 0, 7); x.fill(); }
+  x.globalAlpha = 1;
+  const tMax = Math.max(8, crash.elapsed * 1.15), yMax = Math.max(2, crash.mult * 1.2);
+  const X = s => L + s / tMax * pw, Y = m => T + ph - (m - 1) / (yMax - 1) * ph;
+  x.font = '11px ' + cssv('--f-mono'); x.fillStyle = cssv('--dim'); x.strokeStyle = cssv('--line'); x.lineWidth = 1;
+  const ys = niceStep(yMax - 1, 5, [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500]);
+  x.textAlign = 'right'; x.textBaseline = 'middle';
+  for (let m = 1; m <= yMax + 1e-9; m += ys) { const yy = Math.round(Y(m)) + .5; x.setLineDash([2, 4]); x.beginPath(); x.moveTo(L, yy); x.lineTo(w - R, yy); x.stroke(); x.setLineDash([]); x.fillText(m.toFixed(ys < 1 ? 2 : 0) + '×', L - 8, yy); }
+  const xs = niceStep(tMax, 6, [2, 5, 10, 20, 30, 60]);
+  x.textAlign = 'center'; x.textBaseline = 'top';
+  for (let s = 0; s <= tMax; s += xs) x.fillText(s + 's', X(s), h - B + 8);
+  if (crash.state !== 'idle' || crash.elapsed) {
+    const busted = crash.state === 'crashed' || (crash.state === 'idle' && crash.elapsed);
+    const N = 90, path = [];
+    for (let i = 0; i <= N; i++) { const s = crash.elapsed * i / N; path.push([X(s), Y(Math.min(Math.exp(K * s), crash.mult))]); }
+    const grad = x.createLinearGradient(L, 0, w - R, 0);
+    grad.addColorStop(0, busted ? cssv('--loss') + '88' : g1); grad.addColorStop(1, busted ? cssv('--loss') : g2);
+    const area = x.createLinearGradient(0, T, 0, T + ph); area.addColorStop(0, (busted ? cssv('--loss') : g2) + '55'); area.addColorStop(1, '#00000000');
+    x.beginPath(); path.forEach(([px, py], i) => i ? x.lineTo(px, py) : x.moveTo(px, py)); x.lineTo(path[N][0], Y(1)); x.lineTo(path[0][0], Y(1)); x.closePath(); x.fillStyle = area; x.fill();
+    x.beginPath(); path.forEach(([px, py], i) => i ? x.lineTo(px, py) : x.moveTo(px, py));
+    x.strokeStyle = grad; x.lineWidth = 4; x.lineCap = 'round'; x.lineJoin = 'round'; x.shadowColor = busted ? cssv('--loss') : g2; x.shadowBlur = 18; x.stroke(); x.shadowBlur = 0;
+    const [tx, ty] = path[N]; crash.tip = { x: tx, y: ty };
+    if (crash.state === 'running') {
+      const dx = pw / tMax, dy = -K * crash.mult * ph / (yMax - 1);
+      x.save(); x.translate(tx, ty); x.rotate(Math.atan2(dy, dx));
+      const fl = 14 + Math.random() * 10;
+      const fg = x.createLinearGradient(-fl - 6, 0, -6, 0); fg.addColorStop(0, '#ff6a3d00'); fg.addColorStop(.5, cssv('--c-crash')); fg.addColorStop(1, '#fff3b0');
+      x.fillStyle = fg; x.beginPath(); x.moveTo(-6, -5); x.quadraticCurveTo(-fl, 0, -6, 5); x.closePath(); x.fill();
+      x.fillStyle = '#f3f4ff'; x.beginPath(); x.moveTo(16, 0); x.quadraticCurveTo(8, -8, -6, -6); x.lineTo(-6, 6); x.quadraticCurveTo(8, 8, 16, 0); x.fill();
+      x.fillStyle = g2; x.beginPath(); x.moveTo(-6, -6); x.lineTo(-12, -11); x.lineTo(-2, -6); x.closePath(); x.fill(); x.beginPath(); x.moveTo(-6, 6); x.lineTo(-12, 11); x.lineTo(-2, 6); x.closePath(); x.fill();
+      x.fillStyle = cssv('--c-dice'); x.beginPath(); x.arc(5, 0, 2.8, 0, 7); x.fill();
+      x.restore();
+    }
+    if (crash.cashed && crash.cashMult <= yMax) { const yy = Y(crash.cashMult); x.setLineDash([5, 5]); x.strokeStyle = cssv('--win'); x.lineWidth = 1.5; x.beginPath(); x.moveTo(L, yy); x.lineTo(w - R, yy); x.stroke(); x.setLineDash([]); x.fillStyle = cssv('--win'); x.textAlign = 'right'; x.textBaseline = 'bottom'; x.fillText('you · ' + fmt(crash.cashMult) + '×', w - R, yy - 4); }
+  }
+  for (const p of crash.sparks) { x.globalAlpha = Math.max(0, p.life); x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, p.r * p.life + .5, 0, 7); x.fill(); }
+  x.globalAlpha = 1;
+}
+
+/* ---------- PLINKO ---------- */
+const pl = { rows: 12, risk: 'medium', balls: [], flash: {}, geo: null, running: false, lastFlash: null };
+function plTable() { return plinkoTable(pl.rows, pl.risk, GAMES.plinko.edge); }
+function bucketColor(k, n) { const d = Math.abs(k - n / 2) / (n / 2); return `hsl(${Math.round(285 - d * 270)} 95% ${58 + d * 4}%)`; }
+function plLayout() {
+  const c = $('#plinkoCanvas'); if (!c.offsetParent) return;
+  const w = c.clientWidth, h = c.clientHeight, n = pl.rows;
+  const sp = Math.min((w - 24) / (n + 2), (h - 90) / (n + 0.4));
+  pl.geo = { w, h, n, sp, cx: w / 2, y0: 48, pegR: Math.max(2.2, sp * .1), ballR: Math.max(4, sp * .24) };
+}
+function plPoint(ball, i) {
+  const g = pl.geo; let off = 0; for (let j = 0; j < i; j++) off += ball.dirs[j] * .5;
+  if (i < g.n) return [g.cx + off * g.sp, g.y0 + i * g.sp - g.pegR - g.ballR];
+  return [g.cx + off * g.sp, g.y0 + (g.n - 1) * g.sp + g.sp * .95];
+}
+function drawPlinko() {
+  const c = $('#plinkoCanvas'); if (!c.offsetParent) return;
+  if (!pl.geo || pl.geo.n !== pl.rows || pl.geo.w !== c.clientWidth) plLayout();
+  const { x } = fitCanvas(c), g = pl.geo, tbl = plTable(), now = performance.now();
+  // pegs
+  for (let i = 0; i < g.n; i++) for (let j = 0; j < i + 3; j++) {
+    const px = g.cx + (j - (i + 2) / 2) * g.sp, py = g.y0 + i * g.sp;
+    const hit = pl.balls.some(b => b.hitRow === i && Math.abs(b.hitX - px) < 1 && now - b.hitAt < 160);
+    x.fillStyle = hit ? '#ffffff' : '#c9ccff'; x.globalAlpha = hit ? 1 : .55;
+    if (hit) { x.shadowColor = cssv('--c-plinko'); x.shadowBlur = 14; }
+    x.beginPath(); x.arc(px, py, g.pegR * (hit ? 1.5 : 1), 0, 7); x.fill(); x.shadowBlur = 0;
+  }
+  x.globalAlpha = 1;
+  // buckets
+  const by = g.y0 + (g.n - 1) * g.sp + g.sp * .6, bh = Math.max(22, g.sp * .75), bw = g.sp * .9;
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = `700 ${Math.max(9, Math.min(13, bw * .3))}px ${cssv('--f-mono')}`;
+  tbl.forEach((m, k) => {
+    const bx = g.cx + (k - g.n / 2) * g.sp - bw / 2, f = pl.flash[k], age = f ? (now - f) / 450 : 2, lift = age < 1 ? Math.sin(age * Math.PI) * 7 : 0;
+    x.fillStyle = bucketColor(k, g.n); x.globalAlpha = age < 1 ? 1 : .88;
+    if (age < 1) { x.shadowColor = bucketColor(k, g.n); x.shadowBlur = 20; }
+    x.beginPath(); x.roundRect(bx, by + lift, bw, bh, 6); x.fill(); x.shadowBlur = 0; x.globalAlpha = 1;
+    x.fillStyle = '#130b1f'; x.fillText(m >= 100 ? fmt0(m) : m >= 10 ? m.toFixed(0) : m.toFixed(1), bx + bw / 2, by + lift + bh / 2 + 1);
+  });
+  // balls
+  for (const b of pl.balls) {
+    x.fillStyle = '#fff'; x.shadowColor = cssv('--c-plinko'); x.shadowBlur = 16;
+    x.beginPath(); x.arc(b.x, b.y, g.ballR, 0, 7); x.fill(); x.shadowBlur = 0;
+  }
+}
+function plLoop(now) {
+  const g = pl.geo, segT = 115;
+  for (const b of pl.balls) {
+    const el = now - b.t0, seg = Math.floor(el / segT), t = (el % segT) / segT;
+    if (seg >= g.n + 1) { b.done = true; continue; }
+    const [x0, y0] = seg === 0 ? [g.cx, g.y0 - g.sp * 1.1] : plPoint(b, seg - 1), [x1, y1] = plPoint(b, seg);
+    b.x = x0 + (x1 - x0) * t; b.y = y0 + (y1 - y0) * t * t - (seg > 0 ? Math.sin(Math.PI * t) * g.sp * .28 : 0);
+    if (seg > 0 && b.hitRow !== seg - 1) { b.hitRow = seg - 1; b.hitAt = now; const r = seg - 1; let off = 0; for (let j = 0; j < r; j++) off += b.dirs[j] * .5; b.hitX = g.cx + off * g.sp; }
+  }
+  pl.balls.filter(b => b.done && !b.settled).forEach(plSettle);
+  pl.balls = pl.balls.filter(b => !b.done);
+  drawPlinko(); plUpdate();
+  if (pl.balls.length || Object.values(pl.flash).some(f => now - f < 500)) requestAnimationFrame(plLoop); else pl.running = false;
+}
+function plSettle(b) {
+  b.settled = true; pl.flash[b.k] = performance.now();
+  const payout = Math.round(b.amount * b.mult * 100) / 100;
+  S.balance += payout; updBal(payout > b.amount);
+  logBet({ game: 'plinko', amount: b.amount, mult: b.mult, payout, nonce: b.nonce, hash: b.hash, client: b.client, edge: b.edge, detail: `${fmtM(b.mult)}×`, extra: { rows: b.rows, risk: b.risk } });
+  const o = $('#plOver'); o.innerHTML = `<span style="color:${bucketColor(b.k, b.rows)}">${fmtM(b.mult)}×</span> <span class="muted" style="font-size:12px">${payout >= b.amount ? '+' : ''}${fmt(payout - b.amount)} USDT</span>`;
+  $('#plLast').textContent = fmtM(b.mult) + '×';
+  if (b.mult >= 3) { const r = $('#plinkoCanvas').getBoundingClientRect(); burst(r.left + b.x, r.top + b.y, b.mult >= 10 ? 110 : 50); }
+}
+function plUpdate() {
+  const t = plTable(); $('#plTop').textContent = fmtM(t[0]) + '×'; $('#plFly').textContent = pl.balls.length;
+  const lock = pl.balls.length > 0; $$('#plRisk button, #plRows button').forEach(b => b.disabled = lock);
+}
+$('#plRisk').onclick = e => { const b = e.target.closest('[data-risk]'); if (!b || pl.balls.length) return; pl.risk = b.dataset.risk; $$('#plRisk button').forEach(x => x.setAttribute('aria-pressed', x === b)); plUpdate(); drawPlinko(); };
+$('#plRows').onclick = e => { const b = e.target.closest('[data-rows]'); if (!b || pl.balls.length) return; pl.rows = +b.dataset.rows; $$('#plRows button').forEach(x => x.setAttribute('aria-pressed', x === b)); plLayout(); plUpdate(); drawPlinko(); };
+$('#plinkoBtn').onclick = async () => {
+  const amt = readBet('plinko'); if (amt == null) return;
+  if (pl.balls.length >= 12) { toast('Let some balls land first.', ''); return; }
+  const nonce = takeNonce(), edge = GAMES.plinko.edge, rows = pl.rows, risk = pl.risk;
+  const dirs = Fair.plinko(await floats(seed.server, seed.client, nonce, rows), rows);
+  const k = dirs.filter(d => d > 0).length, mult = plinkoTable(rows, risk, edge)[k];
+  S.balance -= amt; updBal();
+  if (!pl.geo) plLayout();
+  pl.balls.push({ dirs, k, mult, amount: amt, nonce, hash: seed.hash, client: seed.client, edge, rows, risk, t0: performance.now(), x: pl.geo.cx, y: 0, hitRow: -1 });
+  if (RM) { pl.balls.forEach(b => b.t0 -= 1e6); }
+  if (!pl.running) { pl.running = true; requestAnimationFrame(plLoop); }
+};
+
+/* ---------- LUCKY 777 ---------- */
+const FONT_D = 'Unbounded,Arial Black,sans-serif';
+const SYM_SVG = [
+  `<svg viewBox="0 0 64 64"><text x="32" y="55" text-anchor="middle" font-family="${FONT_D}" font-weight="800" font-size="56" fill="url(#sg7)" stroke="#ffe08a" stroke-width="2.5" paint-order="stroke">7</text></svg>`,
+  `<svg viewBox="0 0 64 64"><rect x="4" y="18" width="56" height="28" rx="7" fill="#1a1030" stroke="url(#sgGold)" stroke-width="3"/><text x="32" y="38.5" text-anchor="middle" font-family="${FONT_D}" font-weight="800" font-size="16" fill="url(#sgGold)">BAR</text></svg>`,
+  `<svg viewBox="0 0 64 64"><path d="M16 10h32l12 16-28 30L4 26z" fill="url(#sgDia)"/><path d="M4 26h56M24 10l8 16 8-16M32 26v30" stroke="#ffffff88" stroke-width="1.6" fill="none"/></svg>`,
+  `<svg viewBox="0 0 64 64"><path d="M32 6c3 0 4 2 4 4 9 2 14 10 14 22v10l6 6v4H8v-4l6-6V32c0-12 5-20 14-22 0-2 1-4 4-4z" fill="url(#sgGold)"/><circle cx="32" cy="57" r="5" fill="#ffb300"/><path d="M22 27c1-6 4-9 8-10" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/></svg>`,
+  `<svg viewBox="0 0 64 64"><circle cx="32" cy="37" r="21" fill="url(#sgPlum)"/><path d="M32 16c0-6 3-9 8-10" stroke="#3fa34d" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M37 11c8-4 14-1 16 4-7 3-13 2-16-4z" fill="#4cd964"/><ellipse cx="24" cy="29" rx="5" ry="7" fill="#fff" opacity=".35"/></svg>`,
+  `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="26" ry="18" fill="url(#sgLemon)" transform="rotate(-20 32 34)"/><ellipse cx="22" cy="28" rx="7" ry="4" fill="#fff" opacity=".5" transform="rotate(-20 22 28)"/></svg>`,
+  `<svg viewBox="0 0 64 64"><path d="M20 40C24 24 32 12 46 6M44 42C42 26 44 16 46 6" stroke="#3fa34d" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="20" cy="46" r="13" fill="url(#sgCherry)"/><circle cx="44" cy="48" r="13" fill="url(#sgCherry)"/><circle cx="15" cy="41" r="3.5" fill="#fff" opacity=".6"/><circle cx="39" cy="43" r="3.5" fill="#fff" opacity=".6"/></svg>`
+];
+const SYM_NAME = ['Seven', 'Bar', 'Diamond', 'Bell', 'Plum', 'Lemon', 'Cherry'];
+const slot = { spinning: false, pos: [0, 0, 0] };
+function slotBuild() {
+  STRIPS.forEach((st, i) => { $('#reel' + i).innerHTML = Array(4).fill(st).flat().map(s => `<div class="cell">${SYM_SVG[s]}</div>`).join(''); slot.pos[i] = Math.floor(Math.random() * 32); });
+  slotPlace();
+}
+function slotPlace() { slot.pos.forEach((p, i) => { const v = ((p % 32) + 32) % 32 + 32; $('#reel' + i).style.transform = `translateY(calc(var(--cell) * ${-v}))`; }); }
+const PT_ROWS = [['three0', [0, 0, 0]], ['three1', [1, 1, 1]], ['mix', [0, 1, 'mix']], ['three2', [2, 2, 2]], ['three3', [3, 3, 3]], ['three4', [4, 4, 4]], ['three5', [5, 5, 5]], ['two7', [0, 0, 'any']], ['three6', [6, 6, 6]], ['twoCh', [6, 6, 'any']], ['oneCh', [6, 'any', 'any']]];
+function renderPaytable(on) {
+  const p = slotPaytable(GAMES.slots.edge);
+  $('#payTable').innerHTML = PT_ROWS.map(([k, ic]) => `<div class="${k === on ? 'on' : ''}"><span class="ic">${ic.map(s => typeof s === 'number' ? SYM_SVG[s] : `<small style="font-size:10px;width:20px;text-align:center">${s === 'mix' ? '7/B' : 'any'}</small>`).join('')}</span><b class="num">${fmtM(rawOf(p, k))}×</b></div>`).join('');
+}
+async function slotSpin() {
+  if (slot.spinning) return;
+  const amt = readBet('slots'); if (amt == null) return;
+  slot.spinning = true; $('#slotsBtn').disabled = true; $('#payline').classList.remove('hit'); renderPaytable();
+  $('#slotMsg').className = 'slot-msg'; $('#slotMsg').innerHTML = '<span class="muted">Spinning…</span>';
+  const nonce = takeNonce(), edge = GAMES.slots.edge, hash = seed.hash, client = seed.client;
+  const stops = Fair.slots(await floats(seed.server, client, nonce, 3)), res = slotMult(stops, edge);
+  S.balance -= amt; updBal();
+  const starts = slot.pos.slice(), targets = stops.map((st, i) => { const top = st - 1, d = (((top - starts[i]) % 32) + 32) % 32; return starts[i] + d + 32 * (2 + i); });
+  const durs = RM ? [0, 0, 0] : [1100, 1550, 2000], t0 = performance.now();
+  const back = t => { const c1 = 1.1, c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; };
+  const step = now => {
+    let done = true;
+    for (let i = 0; i < 3; i++) { const t = durs[i] ? Math.min(1, (now - t0) / durs[i]) : 1; if (t < 1) done = false; slot.pos[i] = starts[i] + (targets[i] - starts[i]) * back(t); }
+    slotPlace();
+    if (!done) return requestAnimationFrame(step);
+    slot.pos = targets.map(p => ((p % 32) + 32) % 32); slotPlace();
+    const payout = Math.round(amt * res.mult * 100) / 100;
+    S.balance += payout; updBal(payout > amt);
+    logBet({ game: 'slots', amount: amt, mult: res.mult, payout, nonce, hash, client, edge, detail: 'no win' });
+    const msg = $('#slotMsg'); renderPaytable(res.key);
+    if (res.key === 'three0') { msg.className = 'slot-msg jack'; msg.textContent = `JACKPOT 777 · ${fmtM(res.mult)}×`; burstAt($('.machine'), 220); setTimeout(() => burstAt($('.machine'), 160), 350); }
+    else if (res.mult > 0) { msg.className = 'slot-msg'; msg.innerHTML = `<span class="grad-text">${res.key.startsWith('three') ? 'Three ' + SYM_NAME[+res.key.slice(5)] + 's' : res.key === 'mix' ? 'Any 7 / Bar' : res.key === 'two7' ? 'Two Sevens' : res.key === 'twoCh' ? 'Two Cherries' : 'Cherry'} · ${fmtM(res.mult)}×</span>`; if (res.mult >= 4) burstAt($('.machine'), res.mult >= 20 ? 140 : 60); }
+    else { msg.className = 'slot-msg'; msg.innerHTML = '<span class="muted">No win this time</span>'; }
+    if (res.mult > 0) $('#payline').classList.add('hit');
+    $('#slotSub').textContent = payout > 0 ? `Paid ${fmt(payout)} USDT` : `Lost ${fmt(amt)} USDT`;
+    slot.spinning = false; $('#slotsBtn').disabled = false;
+  };
+  requestAnimationFrame(step);
+}
+$('#slotsBtn').onclick = slotSpin;
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || S.view !== 'player' || S.tab !== 'slots' || e.target.closest('input,select,button,textarea')) return;
+  e.preventDefault(); slotSpin();
+});
+
+/* ---------- WHEEL ---------- */
+const wh = { risk: 'medium', rot: 0, spinning: false, last: null };
+function whColor(tbl) {
+  const vals = [...new Set(tbl.filter(v => v > 0))].sort((a, b) => a - b);
+  const pal = ['--c-dice', '--c-mines', '--c-wheel', '--c-plinko', '--c-crash2', '--c-crash'].map(v => cssv(v)), map = {};
+  vals.forEach((v, i) => map[v] = vals.length === 1 ? cssv('--c-crash2') : pal[Math.round(i * (pal.length - 1) / (vals.length - 1))]);
+  return v => v > 0 ? map[v] : cssv('--panel-3');
+}
+function drawWheel() {
+  const c = $('#wheelCanvas'); if (!c.offsetParent) return;
+  const { x, w, h } = fitCanvas(c);
+  const tbl = wheelTable(wh.risk, GAMES.wheel.edge), col = whColor(tbl), n = 30, th = 2 * Math.PI / n;
+  const cx = w / 2, cy = h / 2 + 10, R = Math.max(60, Math.min(w / 2 - 22, h / 2 - 32)), now = performance.now();
+  // rim and bulbs
+  x.beginPath(); x.arc(cx, cy, R + 14, 0, 7); x.fillStyle = cssv('--panel-2'); x.fill();
+  x.lineWidth = 2; x.strokeStyle = cssv('--line-2'); x.stroke();
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + i * th + wh.rot, on = wh.spinning ? (Math.floor(now / 90) + i) % 3 === 0 : i % 2 === 0;
+    x.beginPath(); x.arc(cx + Math.cos(a) * (R + 7), cy + Math.sin(a) * (R + 7), 2.6, 0, 7);
+    x.fillStyle = on ? '#fff6c2' : cssv('--line-2'); if (on) { x.shadowColor = '#ffe680'; x.shadowBlur = 8; } x.fill(); x.shadowBlur = 0;
+  }
+  // segments
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + i * th + wh.rot, a1 = a0 + th, hit = !wh.spinning && wh.last === i;
+    x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, R, a0, a1); x.closePath();
+    x.fillStyle = col(tbl[i]); x.globalAlpha = wh.last != null && !wh.spinning && !hit ? .55 : 1; x.fill(); x.globalAlpha = 1;
+    x.strokeStyle = cssv('--bg'); x.lineWidth = 2; x.stroke();
+    if (hit) { x.save(); x.shadowColor = '#fff'; x.shadowBlur = 20; x.strokeStyle = '#fff'; x.lineWidth = 3; x.stroke(); x.restore(); }
+    if (tbl[i] > 0 && R > 110) {
+      x.save(); x.translate(cx, cy); x.rotate(a0 + th / 2); x.fillStyle = '#130b1f';
+      x.font = `700 ${Math.min(12, R * .075)}px ${cssv('--f-mono')}`; x.textAlign = 'right'; x.textBaseline = 'middle';
+      x.fillText(fmtM(tbl[i]), R - 8, 0); x.restore();
+    }
+  }
+  // hub
+  const hr = R * .34, hg = x.createRadialGradient(cx, cy - hr * .4, 2, cx, cy, hr);
+  hg.addColorStop(0, cssv('--panel-3')); hg.addColorStop(1, cssv('--bg'));
+  x.beginPath(); x.arc(cx, cy, hr, 0, 7); x.fillStyle = hg; x.fill();
+  const rg = x.createLinearGradient(cx - hr, cy, cx + hr, cy); rg.addColorStop(0, cssv('--c-wheel2')); rg.addColorStop(1, cssv('--c-wheel'));
+  x.lineWidth = 4; x.strokeStyle = rg; x.stroke();
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  if (wh.last != null && !wh.spinning) { const m = tbl[wh.last]; x.fillStyle = m > 0 ? col(m) : cssv('--muted'); x.font = `800 ${Math.round(hr * .42)}px ${FONT_D}`; x.fillText(m > 0 ? fmtM(m) + '×' : '0×', cx, cy); }
+  else { x.fillStyle = cssv('--muted'); x.font = `700 ${Math.round(hr * .22)}px ${FONT_D}`; x.fillText(wh.spinning ? '· · ·' : 'SPIN', cx, cy); }
+  // pointer
+  x.save(); x.shadowColor = cssv('--c-wheel2'); x.shadowBlur = 16; x.fillStyle = '#fff';
+  x.beginPath(); x.moveTo(cx - 13, cy - R - 22); x.lineTo(cx + 13, cy - R - 22); x.lineTo(cx, cy - R + 6); x.closePath(); x.fill(); x.restore();
+}
+function whUpdate() {
+  const tbl = wheelTable(wh.risk, GAMES.wheel.edge), col = whColor(tbl);
+  $('#whTop').textContent = fmtM(Math.max(...tbl)) + '×';
+  $('#whHit').textContent = Math.round(tbl.filter(v => v > 0).length / 30 * 100) + '%';
+  const groups = {}; tbl.forEach(v => groups[v] = (groups[v] || 0) + 1);
+  $('#whLegend').innerHTML = Object.keys(groups).map(Number).sort((a, b) => a - b).map(v => `<span class="wl ${v > 0 ? '' : 'zero'}" style="${v > 0 ? 'background:' + col(v) : ''}">${fmtM(v)}×<small>${(groups[v] / 30 * 100).toFixed(1)}%</small></span>`).join('');
+  $$('#whRisk button').forEach(b => b.disabled = wh.spinning);
+  $('#wheelBtn').disabled = wh.spinning;
+}
+$('#whRisk').onclick = e => { const b = e.target.closest('[data-risk]'); if (!b || wh.spinning) return; wh.risk = b.dataset.risk; wh.last = null; $$('#whRisk button').forEach(x => x.setAttribute('aria-pressed', x === b)); whUpdate(); drawWheel(); };
+$('#wheelBtn').onclick = async () => {
+  if (wh.spinning) return;
+  const amt = readBet('wheel'); if (amt == null) return;
+  const nonce = takeNonce(), edge = GAMES.wheel.edge, risk = wh.risk, hash = seed.hash, client = seed.client;
+  const s = Fair.wheel(await floats(seed.server, client, nonce, 1)), mult = wheelTable(risk, edge)[s];
+  S.balance -= amt; updBal(); wh.spinning = true; wh.last = null; whUpdate();
+  const th = 2 * Math.PI / 30, r0 = wh.rot, j = (Math.random() - .5) * .7;
+  const delta = ((((-(s + .5 + j) * th) - r0) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) + 2 * Math.PI * 6;
+  const dur = RM ? 0 : 4300, t0 = performance.now();
+  const step = now => {
+    const t = dur ? Math.min(1, (now - t0) / dur) : 1;
+    wh.rot = r0 + delta * (1 - (1 - t) ** 4); drawWheel();
+    if (t < 1) return requestAnimationFrame(step);
+    wh.rot %= 2 * Math.PI; wh.spinning = false; wh.last = s;
+    const payout = Math.round(amt * mult * 100) / 100;
+    S.balance += payout; updBal(payout > amt);
+    logBet({ game: 'wheel', amount: amt, mult, payout, nonce, hash, client, edge, detail: 'no win', extra: { risk } });
+    $('#whLast').textContent = fmtM(mult) + '×';
+    whUpdate(); drawWheel();
+    if (mult >= 2) burstAt($('#wheelCanvas'), mult >= 10 ? 180 : 60);
+    if (mult > 0) toast(`Wheel stopped on ${fmtM(mult)}× · ${payout >= amt ? '+' : ''}${fmt(payout - amt)} USDT`, payout >= amt ? 'ok' : '');
+  };
+  requestAnimationFrame(step);
+};
+
+/* ---------- DICE ---------- */
+let diceMode = 'under', diceBusy = false;
+function diceCalc() {
+  const target = parseFloat($('#diceTarget').value), edge = GAMES.dice.edge;
+  const chance = diceMode === 'under' ? target : 100 - target;
+  return { target, chance, mult: Math.floor((100 - edge) / chance * 10000) / 10000 };
+}
+function updDice() {
+  const { target, chance, mult } = diceCalc(), b = parseFloat($('#diceBet').value) || 0;
+  $('#diceTargetVal').textContent = target.toFixed(2);
+  $('#diceChance').textContent = chance.toFixed(1) + '%';
+  $('#diceMult').textContent = mult.toFixed(2) + '×';
+  $('#diceProfit').textContent = fmt(b * mult - b);
+  const z = $('#diceZone');
+  if (diceMode === 'under') { z.style.left = '0'; z.style.width = target + '%'; } else { z.style.left = target + '%'; z.style.width = (100 - target) + '%'; }
+}
+$('#diceTarget').oninput = updDice; $('#diceBet').oninput = updDice;
+$('#dUnder').onclick = () => { diceMode = 'under'; $('#dUnder').setAttribute('aria-pressed', true); $('#dOver').setAttribute('aria-pressed', false); updDice(); };
+$('#dOver').onclick = () => { diceMode = 'over'; $('#dOver').setAttribute('aria-pressed', true); $('#dUnder').setAttribute('aria-pressed', false); updDice(); };
+$('#diceBtn').onclick = async () => {
+  if (diceBusy) return;
+  const amt = readBet('dice'); if (amt == null) return;
+  diceBusy = true; $('#diceBtn').disabled = true;
+  const { target, chance, mult } = diceCalc(); const nonce = takeNonce(); const edge = GAMES.dice.edge;
+  const roll = Fair.dice(await floats(seed.server, seed.client, nonce, 1));
+  S.balance -= amt; updBal();
+  const win = diceMode === 'under' ? roll < target : roll > target;
+  const payout = win ? Math.round(amt * mult * 100) / 100 : 0;
+  const r = $('#diceResult'), mk = $('#diceMarker'); r.className = 'dice-result'; mk.className = 'marker';
+  mk.style.left = roll + '%';
+  const t0 = performance.now(), dur = RM ? 0 : 560;
+  const spin = now => {
+    if (now - t0 < dur) { const v = (Math.random() * 100).toFixed(2); r.textContent = v; mk.textContent = v; requestAnimationFrame(spin); return; }
+    r.textContent = roll.toFixed(2); mk.textContent = roll.toFixed(2);
+    r.className = 'dice-result ' + (win ? 'w' : 'l'); mk.className = 'marker ' + (win ? 'w' : 'l');
+    $('#diceSub').textContent = win ? `Won ${fmt(payout)} USDT at ${mult.toFixed(2)}×` : `Needed ${diceMode} ${target.toFixed(2)} · ${chance.toFixed(1)}% chance`;
+    S.balance += payout; updBal(win);
+    if (win) burstAt(r, mult >= 4 ? 90 : 40, [cssv('--c-dice'), cssv('--c-dice2'), '#ffffff', cssv('--c-mines')]);
+    logBet({ game: 'dice', amount: amt, mult, payout, nonce, hash: seed.hash, client: seed.client, edge, detail: `roll ${roll.toFixed(2)}` });
+    diceBusy = false; $('#diceBtn').disabled = false;
+  };
+  requestAnimationFrame(spin);
+};
+
+/* ---------- MINES ---------- */
+const GEM = `<svg viewBox="0 0 24 24"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaffb0"/><stop offset="1" stop-color="#2ee59d"/></linearGradient></defs><path d="M6 3h12l4 6-10 12L2 9z" fill="url(#gg)"/><path d="M2 9h20M9 3l3 6 3-6M12 9v12" stroke="#0a3d2a55" fill="none" stroke-width="1.1"/></svg>`;
+const MINE = `<svg viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4M4.6 4.6l2.8 2.8M16.6 16.6l2.8 2.8M4.6 19.4l2.8-2.8M16.6 7.4l2.8-2.8"/></g><circle cx="12" cy="12" r="6.5" fill="currentColor"/><circle cx="10" cy="10" r="1.8" fill="#ffffff88"/></svg>`;
+for (let i = 1; i <= 24; i++) $('#minesCount').insertAdjacentHTML('beforeend', `<option value="${i}" ${i === 3 ? 'selected' : ''}>${i}</option>`);
+const mines = { state: 'idle', bet: 0, m: 3, layout: [], open: new Set(), last: -1 };
+const gemsFound = () => [...mines.open].filter(i => !mines.layout.includes(i)).length;
+function renderMines() {
+  const g = $('#minesGrid'), over = mines.state === 'over';
+  g.innerHTML = Array.from({ length: 25 }, (_, i) => {
+    const isMine = mines.layout.includes(i), opened = mines.open.has(i);
+    let cls = 'tile', inner = '';
+    if (opened) { cls += (isMine ? ' mine' : ' gem') + (i === mines.last ? ' pop' : ''); inner = isMine ? MINE : GEM; }
+    else if (over) { cls += (isMine ? ' mine' : ' gem') + ' ghost'; inner = isMine ? MINE : GEM; }
+    return `<button class="${cls}" data-t="${i}" aria-label="Tile ${i + 1}" ${mines.state !== 'playing' || opened ? 'disabled' : ''}>${inner}</button>`;
+  }).join('');
+  updMinesInfo();
+}
+function updMinesInfo() {
+  const btn = $('#minesBtn'), k = gemsFound(), edge = mines.edge ?? GAMES.mines.edge;
+  const m = mines.state === 'playing' ? mines.m : parseInt($('#minesCount').value);
+  $('#minesFound').textContent = mines.state === 'idle' ? '0' : `${k}/${25 - m}`;
+  $('#minesCur').textContent = k > 0 ? fmtM(minesMult(m, k, edge)) + '×' : '—';
+  $('#minesNext').textContent = k < 25 - m ? fmtM(minesMult(m, k + 1, edge)) + '×' : '—';
+  $('#minesCount').disabled = mines.state === 'playing';
+  const start = Math.max(1, k - 1), steps = [];
+  for (let s = start; s <= Math.min(25 - m, start + 6); s++) steps.push(`<span class="${s === k + 1 && mines.state === 'playing' ? 'now' : s <= k ? 'done' : ''}">${fmtM(minesMult(m, s, edge))}×</span>`);
+  $('#minesLadder').innerHTML = steps.join('');
+  if (mines.state === 'playing') {
+    btn.className = 'btn btn-big ' + (k > 0 ? 'btn-cash' : 'btn-go');
+    btn.textContent = k > 0 ? `Cash out ${fmt(mines.bet * minesMult(m, k, edge))}` : 'Pick a tile';
+    btn.disabled = k === 0;
+  } else { btn.className = 'btn btn-big btn-go'; btn.textContent = mines.state === 'over' ? 'New game' : 'Start game'; btn.disabled = false; }
+}
+$('#minesCount').onchange = updMinesInfo;
+$('#minesBtn').onclick = async () => {
+  if (mines.state === 'playing') return minesCash();
+  const amt = readBet('mines'); if (amt == null) return;
+  const m = parseInt($('#minesCount').value), nonce = takeNonce(), edge = GAMES.mines.edge;
+  $('#minesBtn').disabled = true;
+  const layout = Fair.mines(await floats(seed.server, seed.client, nonce, 24), m);
+  S.balance -= amt; updBal();
+  Object.assign(mines, { state: 'playing', bet: amt, m, layout, open: new Set(), last: -1, nonce, hash: seed.hash, client: seed.client, edge });
+  renderMines();
+};
+$('#minesGrid').onclick = e => {
+  const t = e.target.closest('[data-t]'); if (!t || mines.state !== 'playing') return;
+  const i = +t.dataset.t; mines.open.add(i); mines.last = i;
+  if (mines.layout.includes(i)) {
+    mines.state = 'over';
+    logBet({ game: 'mines', amount: mines.bet, mult: 0, payout: 0, nonce: mines.nonce, hash: mines.hash, client: mines.client, edge: mines.edge, detail: `mine · ${mines.m} mines`, extra: { m: mines.m } });
+    renderMines(); burstAt($(`[data-t="${i}"]`), 40, [cssv('--loss'), cssv('--c-crash'), '#ffffff']);
+    toast('Mine hit. Round lost.', 'bad'); return;
+  }
+  if (gemsFound() === 25 - mines.m) return minesCash();
+  renderMines();
+};
+function minesCash() {
+  const k = gemsFound(); if (!k) return;
+  const mult = minesMult(mines.m, k, mines.edge), payout = Math.round(mines.bet * mult * 100) / 100;
+  S.balance += payout; updBal(true); mines.state = 'over'; mines.last = -1;
+  logBet({ game: 'mines', amount: mines.bet, mult, payout, nonce: mines.nonce, hash: mines.hash, client: mines.client, edge: mines.edge, detail: '', extra: { m: mines.m } });
+  renderMines(); burstAt($('#minesGrid'), mult >= 3 ? 100 : 50, [cssv('--c-mines'), cssv('--c-mines2'), '#ffffff', cssv('--c-dice')]);
+  toast(`Cashed out at ${fmtM(mult)}× · +${fmt(payout - mines.bet)} USDT`, 'ok');
+}
+
+/* ---------- FAIRNESS ---------- */
+async function newServerSeed() { seed.server = randHex(32); seed.hash = await sha256(seed.server); seed.nonce = 0; }
+async function rotateSeed(by) {
+  if (crash.state === 'running' || mines.state === 'playing' || pl.balls.length || wh.spinning || slot.spinning) { toast('Finish the active round before rotating the seed.', 'bad'); return; }
+  seed.revealed.unshift({ server: seed.server, hash: seed.hash, client: seed.client, bets: seed.nonce, at: new Date() });
+  await newServerSeed(); renderFair(); if (S.view === 'admin') renderGames();
+  toast(by === 'admin' ? 'Seed rotated by operator. Previous seed is now revealed to players.' : 'Seed rotated. The previous server seed is revealed below.', 'ok');
+}
+function renderFair() {
+  $('#fSrvHash').textContent = seed.hash; $('#fNonce').textContent = seed.nonce;
+  if (document.activeElement !== $('#fClient')) $('#fClient').value = seed.client;
+  $('#fRevealed').innerHTML = seed.revealed.length ? seed.revealed.map((r, i) => `<tr><td class="num muted">${timeStr(r.at)}</td><td class="num">${r.server.slice(0, 16)}…</td><td class="num muted">${r.hash.slice(0, 12)}…</td><td class="num">${esc(r.client)}</td><td class="r num">${r.bets}</td><td class="r"><button class="linkbtn" data-usereveal="${i}">Use in verifier</button></td></tr>`).join('') : `<tr><td colspan="6" class="empty">No revealed seeds yet. Rotate the seed to reveal the current one.</td></tr>`;
+}
+$('#fClientSave').onclick = () => {
+  const v = $('#fClient').value.trim();
+  if (!/^[\w.-]{1,64}$/.test(v)) { toast('Client seed can use letters, digits, dot, dash and underscore, up to 64 characters.', 'bad'); return; }
+  seed.client = v; toast('Client seed saved. It applies from the next bet.', 'ok');
+};
+$('#fRotate').onclick = () => rotateSeed('player');
+$('#vGame').onchange = () => { const g = $('#vGame').value; $('#vMinesF').hidden = g !== 'mines'; $('#vRowsF').hidden = $('#vRiskF').hidden = g !== 'plinko'; $('#vWRiskF').hidden = g !== 'wheel'; $('#vEdgeF').hidden = g === 'dice'; $('#vEdge').value = GAMES[g].edge; };
+function fillVerifier(server, client, nonce, game, extra = {}) {
+  setPTab('fair');
+  $('#vServer').value = server; $('#vClient').value = client; $('#vNonce').value = nonce; $('#vGame').value = game; $('#vGame').onchange();
+  if (extra.edge != null) $('#vEdge').value = extra.edge;
+  if (extra.m) $('#vMines').value = extra.m;
+  if (extra.rows) $('#vRows').value = extra.rows;
+  if (extra.risk) { $('#vRisk').value = extra.risk; $('#vWRisk').value = extra.risk; }
+  runVerify(); $('#vOut').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
+}
+document.addEventListener('click', e => {
+  const u = e.target.closest('[data-usereveal]');
+  if (u) { const r = seed.revealed[+u.dataset.usereveal]; fillVerifier(r.server, r.client, 0, 'crash'); return; }
+  const v = e.target.closest('[data-verify]'); if (!v) return;
+  const b = S.bets.find(x => x.id === +v.dataset.verify);
+  const r = seed.revealed.find(x => x.hash === b.hash);
+  if (!r) { toast('This bet used the active seed. Rotate the seed on the Provably fair tab to reveal it, then verify.', ''); setPTab('fair'); return; }
+  fillVerifier(r.server, b.client, b.nonce, b.game, { edge: b.edge, ...(b.extra || {}) });
+});
+async function runVerify() {
+  const game = $('#vGame').value, server = $('#vServer').value.trim(), client = $('#vClient').value.trim(), nonce = parseInt($('#vNonce').value) || 0;
+  const out = $('#vOut');
+  if (!server || !client) { out.innerHTML = '<span class="hint">Enter a revealed server seed and a client seed.</span>'; return; }
+  const h = await sha256(server); const known = seed.revealed.some(r => r.hash === h);
+  const edge = parseFloat($('#vEdge').value) || 0, rows = +$('#vRows').value;
+  const f = await floats(server, client, nonce, game === 'mines' ? 24 : game === 'plinko' ? rows : game === 'slots' ? 3 : 1);
+  let res;
+  if (game === 'wheel') { const s = Fair.wheel(f), m = wheelTable($('#vWRisk').value, edge)[s];
+    res = `<div class="kv"><span>Segment · multiplier</span><b class="num acc">${s + 1} of 30 · ${fmtM(m)}×</b></div>`; }
+  else if (game === 'slots') { const st = Fair.slots(f), r = slotMult(st, edge);
+    res = `<div class="kv"><span>Reel stops</span><b class="num">${st.join(' · ')}</b></div><div class="kv"><span>Line</span><span style="display:flex;gap:4px">${r.syms.map(s => `<span style="width:26px;height:26px;display:inline-block">${SYM_SVG[s]}</span>`).join('')}</span></div><div class="kv"><span>Multiplier</span><b class="num acc">${r.mult ? fmtM(r.mult) + '×' : 'no win'}</b></div>`; }
+  else
+  if (game === 'crash') res = `<div class="kv"><span>Crash point</span><b class="num acc">${fmt(Fair.crash(f, edge))}×</b></div>`;
+  else if (game === 'dice') res = `<div class="kv"><span>Roll</span><b class="num acc">${Fair.dice(f).toFixed(2)}</b></div>`;
+  else if (game === 'plinko') { const d = Fair.plinko(f, rows), k = d.filter(x => x > 0).length, m = plinkoTable(rows, $('#vRisk').value, edge)[k];
+    res = `<div class="kv"><span>Path</span><b class="num">${d.map(x => x > 0 ? 'R' : 'L').join('')}</b></div><div class="kv"><span>Bucket · multiplier</span><b class="num acc">${k} · ${fmtM(m)}×</b></div>`; }
+  else { const m = Math.min(24, Math.max(1, parseInt($('#vMines').value) || 3)); const L = Fair.mines(f, m);
+    res = `<div class="kv"><span>Mine tiles</span><b class="num acc">${L.map(i => i + 1).join(', ')}</b></div><div class="mini-grid">${Array.from({ length: 25 }, (_, i) => `<i class="${L.includes(i) ? 'm' : ''}"></i>`).join('')}</div>`; }
+  out.innerHTML = `<div class="field"><label>SHA-256 of server seed</label><div class="hash">${h}</div></div><div>${known ? '<span class="chip ok">Matches a committed hash</span>' : '<span class="chip warn">Hash not in this session’s revealed list</span>'}</div>${res}`;
+}
+$('#vRun').onclick = runVerify;
+
+/* ---------- wallet modals ---------- */
+const NETS = [['USDT · TRC20', 'Tron, ~1 min'], ['USDT · ERC20', 'Ethereum, ~3 min'], ['BTC', 'Bitcoin, 2 conf.'], ['ETH', 'Ethereum, ~3 min'], ['LTC', 'Litecoin, ~5 min'], ['SOL', 'Solana, ~1 min']];
+function openModal(html, bind) {
+  $('#modalRoot').innerHTML = `<div class="modal-bg" id="mbg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('#mbg').onclick = e => { if (e.target.id === 'mbg' || e.target.closest('.x')) closeModal(); };
+  bind?.(); $('.modal input')?.focus();
+}
+const closeModal = () => $('#modalRoot').innerHTML = '';
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+const netPicker = () => `<div class="nets">${NETS.map(([n, s], i) => `<button data-net="${n}" aria-pressed="${i === 0}">${n}<small>${s}</small></button>`).join('')}</div>`;
+function bindNets() { $$('[data-net]').forEach(b => b.onclick = () => { $$('[data-net]').forEach(x => x.setAttribute('aria-pressed', x === b)); const a = $('#mNetAddr'); if (a) a.textContent = 'demo_' + b.dataset.net.split(' ')[0].toLowerCase() + '_' + randHex(10); }); }
+const curNet = () => $('[data-net][aria-pressed="true"]').dataset.net;
+$('#btnDeposit').onclick = () => openModal(`
+  <header><h2>Deposit</h2><button class="x" aria-label="Close">×</button></header>
+  ${netPicker()}
+  <div class="field"><label>Your deposit address</label><div class="hash" id="mNetAddr">demo_usdt_${randHex(10)}</div><span class="hint">Demo placeholder. This is not a real address, do not send funds.</span></div>
+  <div class="field"><label for="mDepAmt">Simulate an incoming deposit, USDT</label><div class="amt"><input id="mDepAmt" type="number" value="500" min="1"><button class="mini" data-q="100">100</button><button class="mini" data-q="500">500</button><button class="mini" data-q="1000">1000</button></div></div>
+  <button class="btn btn-go btn-big" id="mDepGo">Simulate deposit</button>`, () => {
+  bindNets(); $$('[data-q]').forEach(b => b.onclick = () => $('#mDepAmt').value = b.dataset.q);
+  $('#mDepGo').onclick = () => {
+    const a = Math.round(parseFloat($('#mDepAmt').value) * 100) / 100;
+    if (!(a >= 1 && a <= 100000)) { toast('Enter an amount from 1 to 100,000.', 'bad'); return; }
+    const net = curNet(); addTx('demo_player', 'deposit', net, a, 'completed'); S.balance += a; updBal(true); closeModal();
+    burstAt($('#balBox'), 50); toast(`Deposit of ${fmt(a)} USDT via ${net} credited.`, 'ok');
+  };
+});
+$('#btnWithdraw').onclick = () => {
+  if (!canPlay()) return;
+  openModal(`
+  <header><h2>Withdraw</h2><button class="x" aria-label="Close">×</button></header>
+  ${netPicker()}
+  <div class="field"><label for="mWAddr">Destination address</label><input class="input num" id="mWAddr" placeholder="Paste a wallet address"></div>
+  <div class="field"><label for="mWAmt">Amount, USDT</label><div class="amt"><input id="mWAmt" type="number" value="100" min="10"><button class="mini" id="mWMax">Max</button></div><span class="hint">Available ${fmt(S.balance)} · minimum 10.00 · reviewed by the operator</span></div>
+  <button class="btn btn-go btn-big" id="mWGo">Request withdrawal</button>`, () => {
+    bindNets(); $('#mWMax').onclick = () => $('#mWAmt').value = Math.floor(S.balance * 100) / 100;
+    $('#mWGo').onclick = () => {
+      const a = Math.round(parseFloat($('#mWAmt').value) * 100) / 100, addr = $('#mWAddr').value.trim();
+      if (addr.length < 8) { toast('Enter a destination address.', 'bad'); return; }
+      if (!(a >= 10)) { toast('Minimum withdrawal is 10.00 USDT.', 'bad'); return; }
+      if (a > S.balance) { toast('Amount exceeds your balance.', 'bad'); return; }
+      S.balance -= a; updBal(); addTx('demo_player', 'withdrawal', curNet(), a, 'pending'); closeModal();
+      toast('Withdrawal request sent for review. Open the operator back office to approve it.', 'ok');
+    };
+  });
+};
+
+/* ---------- ADMIN ---------- */
+const totals = () => ({ T: stats.hourly.reduce((a, x) => a + x.t, 0), G: stats.hourly.reduce((a, x) => a + x.g, 0) });
+function renderAdminLive() {
+  const pane = $$('[data-apane]').find(p => !p.hidden)?.dataset.apane;
+  if (pane === 'overview') renderOverview();
+  if (pane === 'players' && !$('#pTbl').contains(document.activeElement)) renderPlayers();
+}
+function renderAdminAll() { renderOverview(); renderPlayers(); renderPayments(); renderGames(); }
+function renderOverview() {
+  const { T, G } = totals(); const pend = txs.filter(t => t.status === 'pending');
+  const k = [
+    ['GGR today', fmt(G), `<span class="${G >= 0 ? 'win' : 'loss'}">Hold ${(G / T * 100).toFixed(2)}%</span>`],
+    ['Turnover', fmt(T), `${fmt0(stats.bets)} bets`],
+    ['Deposits', fmt(stats.deposits), `${txs.filter(t => t.type === 'deposit').length} transactions`],
+    ['Withdrawals paid', fmt(stats.withdrawals), `${txs.filter(t => t.type === 'withdrawal' && t.status === 'completed').length} completed`],
+    ['Pending review', String(pend.length), pend.length ? `<span style="color:var(--warn)">${fmt(pend.reduce((a, t) => a + t.amount, 0))} USDT waiting</span>` : 'Queue is clear'],
+    ['Active players', String(players.filter(p => p.status === 'active').length), `${players.filter(p => p.kyc === 'pending').length} awaiting KYC`]
+  ];
+  $('#kpis').innerHTML = k.map(([l, v, s]) => `<div class="kpi"><span class="eyebrow">${l}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  drawChart();
+  $('#rtpTbl').innerHTML = Object.entries(GAMES).map(([g, c]) => { const b = stats.byGame[g]; const rtp = (1 - b.g / b.t) * 100; const dev = rtp - (100 - c.edge);
+    return `<tr><td><span class="gtag t-${g}">${c.name}</span> ${c.enabled ? '' : '<span class="chip bad">Paused</span>'}</td><td class="r num">${(100 - c.edge).toFixed(2)}%</td><td class="r num" style="${Math.abs(dev) > 2 ? 'color:var(--warn)' : ''}">${rtp.toFixed(2)}%</td><td class="r num">${fmt0(b.t)}</td><td class="r num ${b.g >= 0 ? 'win' : 'loss'}">${fmt(b.g)}</td></tr>`; }).join('');
+  $('#bigWins').innerHTML = stats.bigWins.length ? stats.bigWins.map(w => `<div class="kv"><span><b style="color:var(--fg)">${esc(w.who)}</b> · <span class="gtag t-${w.game}">${GAMES[w.game].name}</span> · ${fmtM(w.mult)}×</span><span class="num win">${fmt(w.payout)}</span></div>`).join('') : '<span class="hint">No wins over 150 USDT yet today.</span>';
+  const pc = pend.length; $('#pendBadge').hidden = !pc; $('#pendBadge').textContent = pc;
+}
+function drawChart() {
+  const W = 720, H = 230, L = 52, R = 10, Tp = 12, B = 26, pw = W - L - R, ph = H - Tp - B;
+  const vals = stats.hourly.map(x => x.g);
+  const mx = Math.max(50, ...vals), mn = Math.min(0, ...vals);
+  const step = [50, 100, 200, 250, 500, 1000, 2000].find(s => (mx - mn) / s <= 5) || 5000;
+  const top = Math.ceil(mx / step) * step, bot = Math.floor(mn / step) * step;
+  const Y = v => Tp + (top - v) / (top - bot) * ph, bw = pw / 24;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="GGR by hour"><defs><linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--c-plinko)"/><stop offset="1" style="stop-color:var(--c-plinko2)"/></linearGradient></defs>`;
+  for (let v = bot; v <= top + 1e-6; v += step) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="${v === 0 ? 1.5 : 1}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--dim)" font-family="var(--f-mono)">${fmt0(v)}</text>`;
+  vals.forEach((v, h) => {
+    const x = L + h * bw + bw * .18, w = bw * .64, y0 = Y(0), y1 = Y(v), cur = h === nowH;
+    if (h <= nowH) s += `<rect x="${x}" y="${Math.min(y0, y1)}" width="${w}" height="${Math.max(1, Math.abs(y1 - y0))}" rx="3" fill="${v >= 0 ? 'url(#gp)' : 'var(--loss)'}" opacity="${cur ? 1 : .78}"><title>${String(h).padStart(2, '0')}:00 · ${fmt(v)} USDT</title></rect>`;
+    if (h % 3 === 0 || cur) s += `<text x="${x + w / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${cur ? 'var(--fg)' : 'var(--dim)'}" font-family="var(--f-mono)">${String(h).padStart(2, '0')}</text>`;
+  });
+  $('#chart').innerHTML = s + '</svg>';
+}
+const KYC = { verified: ['ok', 'Verified'], pending: ['warn', 'Pending'], none: ['', 'Not started'] };
+const ST = { active: ['ok', 'Active'], blocked: ['bad', 'Blocked'], excluded: ['info', 'Self-excluded'] };
+function renderPlayers() {
+  const q = $('#pSearch').value.trim().toLowerCase(), f = $('#pFilter').value;
+  const list = players.filter(p => p.id.includes(q) && (f === 'all' || (f === 'kyc' ? p.kyc === 'pending' : p.status === f)));
+  $('#pTbl').innerHTML = list.length ? list.map(p => `<tr><td><b>${esc(p.id)}</b>${p.you ? ' <span class="chip info">you</span>' : ''}</td><td>${p.country}</td><td><span class="chip ${KYC[p.kyc][0]}">${KYC[p.kyc][1]}</span></td><td><span class="chip ${ST[p.status][0]}">${ST[p.status][1]}</span></td><td class="r num">${fmt(p.balance)}</td><td class="r num">${fmt(p.wagered)}</td><td class="r num ${p.net >= 0 ? 'loss' : 'win'}">${p.net >= 0 ? '+' : ''}${fmt(p.net)}</td><td class="muted">${p.seen}</td><td class="r"><div style="display:inline-flex;gap:6px">${p.kyc === 'pending' ? `<button class="btn btn-sm" data-kyc="${p.id}">Approve KYC</button>` : ''}${p.status === 'excluded' ? '' : p.status === 'blocked' ? `<button class="btn btn-sm" data-unblock="${p.id}">Unblock</button>` : `<button class="btn btn-sm btn-danger" data-block="${p.id}">Block</button>`}</div></td></tr>`).join('') : '<tr><td colspan="9" class="empty">No players match this filter.</td></tr>';
+}
+$('#pSearch').oninput = renderPlayers; $('#pFilter').onchange = renderPlayers;
+$('#pTbl').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.kyc) { byId(b.dataset.kyc).kyc = 'verified'; toast(`KYC approved for ${b.dataset.kyc}.`, 'ok'); }
+  if (b.dataset.block) { byId(b.dataset.block).status = 'blocked'; toast(`${b.dataset.block} blocked. Betting and withdrawals are disabled.`, 'bad'); }
+  if (b.dataset.unblock) { byId(b.dataset.unblock).status = 'active'; toast(`${b.dataset.unblock} unblocked.`, 'ok'); }
+  renderPlayers(); renderPlayerState();
+};
+let payF = 'all';
+$$('[data-pf]').forEach(b => b.onclick = () => { payF = b.dataset.pf; $$('[data-pf]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderPayments(); });
+const TXS = { completed: ['ok', 'Completed'], pending: ['warn', 'Pending review'], rejected: ['bad', 'Rejected'] };
+function renderPayments() {
+  const list = txs.filter(t => payF === 'all' || (payF === 'pending' ? t.status === 'pending' : t.type === payF));
+  $('#payTbl').innerHTML = list.length ? list.map(t => `<tr><td class="num muted">${timeStr(t.time)}</td><td class="num muted">${t.id}</td><td>${esc(t.player)}</td><td>${t.type === 'deposit' ? 'Deposit' : 'Withdrawal'}</td><td>${t.net}</td><td class="r num ${t.type === 'deposit' ? 'win' : ''}">${t.type === 'deposit' ? '+' : '−'}${fmt(t.amount)}</td><td><span class="chip ${TXS[t.status][0]}">${TXS[t.status][1]}</span></td><td class="r">${t.status === 'pending' ? `<div style="display:inline-flex;gap:6px"><button class="btn btn-sm btn-ok" data-ok="${t.id}">Approve</button><button class="btn btn-sm btn-danger" data-no="${t.id}">Reject</button></div>` : ''}</td></tr>`).join('') : '<tr><td colspan="8" class="empty">Nothing here.</td></tr>';
+  const pc = txs.filter(t => t.status === 'pending').length; $('#pendBadge').hidden = !pc; $('#pendBadge').textContent = pc;
+}
+$('#payTbl').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const t = txs.find(x => x.id === (b.dataset.ok || b.dataset.no)); if (!t) return;
+  if (b.dataset.ok) { t.status = 'completed'; stats.withdrawals += t.amount; toast(`Withdrawal ${t.id} approved and sent.`, 'ok'); }
+  else { t.status = 'rejected'; const p = byId(t.player); if (p.you) { S.balance += t.amount; updBal(); } else p.balance += t.amount; toast(`Withdrawal ${t.id} rejected. Funds returned to ${t.player}.`, 'bad'); }
+  renderPayments(); renderOverview();
+};
+function renderGames() {
+  $('#gset').innerHTML = Object.entries(GAMES).map(([k, g]) => `<div class="panel pad t-${k}">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h3 class="grad-text">${g.name}</h3><label class="switch"><input type="checkbox" id="g_${k}_on" ${g.enabled ? 'checked' : ''}>${g.enabled ? 'Live' : 'Paused'}</label></div>
+    <div class="grid3">
+      <div class="field"><label for="g_${k}_edge">Edge %</label><input class="input num" id="g_${k}_edge" type="number" step="0.1" min="0.5" max="10" value="${g.edge}"></div>
+      <div class="field"><label for="g_${k}_min">Min bet</label><input class="input num" id="g_${k}_min" type="number" step="0.1" min="0.01" value="${g.min}"></div>
+      <div class="field"><label for="g_${k}_max">Max bet</label><input class="input num" id="g_${k}_max" type="number" step="1" min="1" value="${g.max}"></div>
+    </div>
+    <div class="kv"><span>Target RTP</span><span class="num" id="g_${k}_rtp">${(100 - g.edge).toFixed(1)}%</span></div>
+    <button class="btn btn-go" data-save="${k}">Save ${g.name}</button></div>`).join('');
+  $('#aSrvHash').textContent = seed.hash; $('#aNonce').textContent = seed.nonce;
+}
+$('#gset').addEventListener('input', e => { const m = e.target.id.match(/^g_(\w+)_edge$/); if (m) $(`#g_${m[1]}_rtp`).textContent = (100 - (parseFloat(e.target.value) || 0)).toFixed(1) + '%'; });
+$('#gset').addEventListener('change', e => { const m = e.target.id.match(/^g_(\w+)_on$/); if (m) { GAMES[m[1]].enabled = e.target.checked; toast(`${GAMES[m[1]].name} ${e.target.checked ? 'is live' : 'paused for players'}.`, e.target.checked ? 'ok' : 'bad'); renderGames(); renderPlayerState(); renderOverview(); } });
+$('#gset').addEventListener('click', e => {
+  const k = e.target.closest('[data-save]')?.dataset.save; if (!k) return;
+  const edge = parseFloat($(`#g_${k}_edge`).value), mn = parseFloat($(`#g_${k}_min`).value), mx = parseFloat($(`#g_${k}_max`).value);
+  if (!(edge >= 0.5 && edge <= 10)) { toast('House edge must be between 0.5% and 10%.', 'bad'); return; }
+  if (!(mn > 0 && mx > mn)) { toast('Max bet must be greater than min bet.', 'bad'); return; }
+  Object.assign(GAMES[k], { edge, min: mn, max: mx }); toast(`${GAMES[k].name} saved. Target RTP ${(100 - edge).toFixed(1)}%.`, 'ok');
+  renderGames(); renderPlayerState(); renderOverview();
+});
+$('#aRotate').onclick = () => rotateSeed('admin');
+
+/* ---------- boot ---------- */
+window.addEventListener('resize', () => { drawCrash(); plLayout(); drawPlinko(); drawWheel(); slotPlace(); });
+(async function init() {
+  if (!window.crypto?.subtle) { toast('This browser blocks Web Crypto, so games cannot run here.', 'bad'); return; }
+  await newServerSeed();
+  for (let i = 0; i < 14; i++) botBet(true);
+  slotBuild();
+  updBal(); renderMyBets(); renderPlayerState(); renderFair(); renderMines(); updCrashUI(); renderFeed();
+  $('#vEdge').value = GAMES.crash.edge;
+  setInterval(() => botBet(false), 1700);
+  setInterval(() => { if (S.view === 'admin') renderAdminLive(); }, 3000);
+})();
+})();
+</script>
+</body>
+</html>
